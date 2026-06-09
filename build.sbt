@@ -8,10 +8,14 @@ lazy val microservice = Project("euvat-stubs", file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
   .disablePlugins(JUnitXmlReportPlugin) //Required to prevent https://github.com/scalatest/scalatest/issues/1427
   .settings(
+    PlayKeys.playDefaultPort := 18504,
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
     // https://www.scala-lang.org/2021/01/12/configuring-and-suppressing-warnings.html
     // suppress warnings in generated routes files
-    scalacOptions += "-Wconf:src=routes/.*:s",
+    scalacOptions ++= Seq(
+      "-Werror", // or -Xfatal-warnings for Scala 2
+      "-Wconf:src=routes/.*:s"
+    )
   )
   .settings(CodeCoverageSettings.settings: _*)
 
