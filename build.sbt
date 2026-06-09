@@ -6,7 +6,8 @@ ThisBuild / scalacOptions += "-Wconf:msg=Flag.*repeatedly:s"
 
 lazy val microservice = Project("euvat-stubs", file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
-  .disablePlugins(JUnitXmlReportPlugin) //Required to prevent https://github.com/scalatest/scalatest/issues/1427
+  .disablePlugins(JUnitXmlReportPlugin) // Required to prevent https://github.com/scalatest/scalatest/issues/1427
+  .settings(scalafmtOnCompile := true, scalafmtDetailedError := true, scalafmtPrintDiff := true, scalafmtFailOnErrors := true)
   .settings(
     PlayKeys.playDefaultPort := 18504,
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,

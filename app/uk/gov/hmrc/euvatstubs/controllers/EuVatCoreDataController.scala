@@ -26,36 +26,35 @@ import java.time.LocalDateTime
 import javax.inject.{Inject, Singleton}
 
 @Singleton
-class EuVatCoreDataController @Inject()(cc: ControllerComponents) extends BackendController(cc) with Logging:
+class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends BackendController(cc) with Logging:
 
   private def knownFactsResponse(vrn: String, tradeClass: String): TradersKnownFacts = TradersKnownFacts(
-    vatRegNumber = vrn.toInt,
-    traderName = "TestData",
-    addressLine1 = "Line 1",
-    addressLine2 = "Line 2",
-    addressLine3 = "Line 3",
-    addressLine4 = "Line 4",
-    addressLine5 = "Line 5",
-    postCode = "NE3 9TG",
-    tradeClass = tradeClass,
-    dateOfRegistration = LocalDateTime.of(2025, 1, 11, 10, 38),
-    dateOfDeregistration = LocalDateTime.of(2026, 1, 11, 10, 38),
+    vatRegNumber           = vrn.toInt,
+    traderName             = "TestData",
+    addressLine1           = "Line 1",
+    addressLine2           = "Line 2",
+    addressLine3           = "Line 3",
+    addressLine4           = "Line 4",
+    addressLine5           = "Line 5",
+    postCode               = "NE3 9TG",
+    tradeClass             = tradeClass,
+    dateOfRegistration     = LocalDateTime.of(2025, 1, 11, 10, 38),
+    dateOfDeregistration   = LocalDateTime.of(2026, 1, 11, 10, 38),
     missingTraderIndicator = "N",
-    singleMarketIndicator = 1
+    singleMarketIndicator  = 1
   )
 
-  def getTraderByVrn(vrn: String): Action[AnyContent] = Action {
-    implicit request =>
-      logger.info(s"Stub: returning known facts for VRN: $vrn")
+  def getTraderByVrn(vrn: String): Action[AnyContent] = Action { implicit request =>
+    logger.info(s"Stub: returning known facts for VRN: $vrn")
 
-      val response = if (vrn.endsWith("111")) {
-        knownFactsResponse(vrn, "1111")
-      } else if (vrn.endsWith("999")) {
-        knownFactsResponse(vrn, "9999")
-      } else {
-        knownFactsResponse(vrn, "7020")
-      }
+    val response = if (vrn.endsWith("111")) {
+      knownFactsResponse(vrn, "1111")
+    } else if (vrn.endsWith("999")) {
+      knownFactsResponse(vrn, "9999")
+    } else {
+      knownFactsResponse(vrn, "7020")
+    }
 
-      Ok(Json.toJson(response))
+    Ok(Json.toJson(response))
 
   }
