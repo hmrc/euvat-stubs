@@ -79,6 +79,20 @@ class EuVatCoreDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
   }
 
+  "EuVatCoreDataController.getLatestApplications" should {
+    "return a valid Application" in {
+      val fakeRequest = FakeRequest("POST", s"/get-latest-application")
+
+      val result = controller.getLatestApplications()(fakeRequest)
+
+      status(result) `mustBe` OK
+
+      val json: JsValue = contentAsJson(result)
+      val total = (json \ "totalApplication").toOption.flatMap(_.asOpt[Int])
+      total mustBe Some(1)
+    }
+  }
+
   private def dummyTrader(vrn: String): TradersKnownFacts =
     TradersKnownFacts(
       vatRegNumber           = vrn.toInt,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package uk.gov.hmrc.euvatstubs.controllers
 import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.euvatstubs.models.TradersKnownFacts
+import uk.gov.hmrc.euvatstubs.models.{LatestApplication, LatestApplicationResponse, TradersKnownFacts}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.LocalDateTime
@@ -57,4 +57,26 @@ class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends Backe
 
     Ok(Json.toJson(response))
 
+  }
+
+  private def latestApplicationResponse(): LatestApplicationResponse = LatestApplicationResponse(
+    applications = List(
+      LatestApplication(
+        applicationId        = 133,
+        refundingCountryCode = "LV",
+        periodStartDate      = LocalDateTime.of(2025, 2, 1, 0, 0),
+        periodEndDate        = LocalDateTime.of(2025, 5, 31, 23, 59),
+        applicationNumber    = "GB0000000000000133",
+        applicationStatus    = "D",
+        submissionStatus     = "S",
+        applicationVersion   = LocalDateTime.of(2025, 2, 11, 10, 38)
+      )
+    ),
+    totalApplication = 1
+  )
+
+  def getLatestApplications(): Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: returning latest Applicaitons")
+    val response = latestApplicationResponse()
+    Ok(Json.toJson(response))
   }
