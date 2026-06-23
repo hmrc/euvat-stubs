@@ -54,9 +54,9 @@ class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends Backe
     val response = if (vrn.endsWith("111")) {
       knownFactsResponse(vrn, "1111")
     } else if (vrn.endsWith("999")) {
-      knownFactsResponse(vrn, "9999", Some(LocalDateTime.of(2025, 5, 20, 10, 38)))
+      knownFactsResponse(vrn, "9999", Some(LocalDateTime.of(2025, 3, 1, 0, 0)))
     } else {
-      knownFactsResponse(vrn, "7020", Some(LocalDateTime.of(2025, 5, 20, 10, 38)), Some(LocalDateTime.of(2026, 7, 20, 10, 38)))
+      knownFactsResponse(vrn, "7020", Some(LocalDateTime.of(2025, 6, 1, 0, 0)), Some(LocalDateTime.of(2025, 8, 31, 23, 59)))
     }
 
     Ok(Json.toJson(response))
