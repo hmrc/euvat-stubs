@@ -104,8 +104,8 @@ class EuVatCoreDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       addressLine5           = "E",
       postCode               = "NE3 9TG",
       tradeClass             = "dummy",
-      dateOfRegistration     = LocalDateTime.now(),
-      dateOfDeregistration   = LocalDateTime.now(),
+      dateOfRegistration     = Some(LocalDateTime.now()),
+      dateOfDeregistration   = Some(LocalDateTime.now()),
       missingTraderIndicator = "N",
       singleMarketIndicator  = 1
     )
