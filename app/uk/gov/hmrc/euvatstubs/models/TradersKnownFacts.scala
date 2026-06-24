@@ -31,8 +31,7 @@ case class TradersKnownFacts(
   tradeClass: String,
   dateOfRegistration: Option[LocalDateTime],
   dateOfDeregistration: Option[LocalDateTime],
-  missingTraderIndicator: String,
-  singleMarketIndicator: Int
+  missingTraderIndicator: String
 )
 
 object TradersKnownFacts {
