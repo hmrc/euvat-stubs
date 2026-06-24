@@ -16,8 +16,7 @@
 
 package uk.gov.hmrc.euvatstubs.models
 
-import play.api.libs.functional.syntax.*
-import play.api.libs.json.{Format, __}
+import play.api.libs.json.{Json, OFormat}
 
 import java.time.LocalDateTime
 
@@ -32,15 +31,6 @@ case class LatestApplication(
   applicationVersion: LocalDateTime
 )
 
-object LatestApplication:
-  implicit val format: Format[LatestApplication] =
-    (
-      (__ \ "applicationId").format[Long] and
-        (__ \ "refundingCountryCode").format[String] and
-        (__ \ "periodStartDate").format[LocalDateTime] and
-        (__ \ "periodEndDate").format[LocalDateTime] and
-        (__ \ "applicationNumber").format[String] and
-        (__ \ "applicationStatus").format[String] and
-        (__ \ "submissionStatus").format[String] and
-        (__ \ "applicationVersion").format[LocalDateTime]
-    )(LatestApplication.apply, o => Tuple.fromProductTyped(o))
+object LatestApplication {
+  implicit val format: OFormat[LatestApplication] = Json.format[LatestApplication]
+}
