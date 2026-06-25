@@ -16,9 +16,7 @@
 
 package uk.gov.hmrc.euvatstubs.models
 
-import play.api.libs.functional.syntax.*
-import play.api.libs.json.{Format, __}
-
+import play.api.libs.json.{Json, OFormat}
 import java.time.LocalDateTime
 
 case class TradersKnownFacts(
@@ -31,26 +29,11 @@ case class TradersKnownFacts(
   addressLine5: String,
   postCode: String,
   tradeClass: String,
-  dateOfRegistration: LocalDateTime,
-  dateOfDeregistration: LocalDateTime,
-  missingTraderIndicator: String,
-  singleMarketIndicator: Int
+  dateOfRegistration: Option[LocalDateTime],
+  dateOfDeregistration: Option[LocalDateTime],
+  missingTraderIndicator: String
 )
 
-object TradersKnownFacts:
-  implicit val format: Format[TradersKnownFacts] =
-    (
-      (__ \ "vatRegNumber").format[Int] and
-        (__ \ "traderName").format[String] and
-        (__ \ "addressLine1").format[String] and
-        (__ \ "addressLine2").format[String] and
-        (__ \ "addressLine3").format[String] and
-        (__ \ "addressLine4").format[String] and
-        (__ \ "addressLine5").format[String] and
-        (__ \ "postCode").format[String] and
-        (__ \ "tradeClass").format[String] and
-        (__ \ "dateOfRegistration").format[LocalDateTime] and
-        (__ \ "dateOfDeregistration").format[LocalDateTime] and
-        (__ \ "missingTraderIndicator").format[String] and
-        (__ \ "singleMarketIndicator").format[Int]
-    )(TradersKnownFacts.apply, o => Tuple.fromProductTyped(o))
+object TradersKnownFacts {
+  implicit val format: OFormat[TradersKnownFacts] = Json.format[TradersKnownFacts]
+}
