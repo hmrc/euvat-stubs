@@ -35,6 +35,18 @@ class EuVatCoreDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
   val controller = new EuVatCoreDataController(stubControllerComponents())
 
   "EuVatCoreDataController.getTraderByVrn" should {
+    val expectedJson = Json.obj(
+      "vatRegNumber"           -> 123111,
+      "traderName"             -> "TestData",
+      "addressLine1"           -> "Line 1",
+      "addressLine2"           -> "Line 2",
+      "addressLine3"           -> "Line 3",
+      "addressLine4"           -> "Line 4",
+      "addressLine5"           -> "Line 5",
+      "postCode"               -> "NE3 9TG",
+      "tradeClass"             -> "1111",
+      "missingTraderIndicator" -> "N"
+    )
 
     "return tradeClass 1111 when VRN ends with 111" in {
       val vrn = "123111"
@@ -47,6 +59,8 @@ class EuVatCoreDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       status(result) mustBe OK
 
       val json = contentAsJson(result)
+
+      json mustBe expectedJson
       (json \ "tradeClass").as[String] mustBe "1111"
     }
 
@@ -62,6 +76,20 @@ class EuVatCoreDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       val json = contentAsJson(result)
       (json \ "tradeClass").as[String] mustBe "9999"
+    }
+
+    "return tradeClass 8888 when VRN ends with 888" in {
+      val vrn = "123888"
+
+      val fakeRequest = FakeRequest("GET", s"/traders/getKnownFacts/$vrn")
+        .withBody(Json.toJson(dummyTrader(vrn)))
+
+      val result = controller.getTraderByVrn(vrn)(fakeRequest)
+
+      status(result) mustBe OK
+
+      val json = contentAsJson(result)
+      (json \ "tradeClass").as[String] mustBe "8888"
     }
 
     "return tradeClass 7020 for all other VRNs" in {
@@ -106,7 +134,6 @@ class EuVatCoreDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       tradeClass             = "dummy",
       dateOfRegistration     = Some(LocalDateTime.now()),
       dateOfDeregistration   = Some(LocalDateTime.now()),
-      missingTraderIndicator = "N",
-      singleMarketIndicator  = 1
+      missingTraderIndicator = "N"
     )
 }

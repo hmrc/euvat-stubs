@@ -44,8 +44,7 @@ class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends Backe
     tradeClass             = tradeClass,
     dateOfRegistration     = regDate,
     dateOfDeregistration   = deRegDate,
-    missingTraderIndicator = "N",
-    singleMarketIndicator  = 1
+    missingTraderIndicator = "N"
   )
 
   def getTraderByVrn(vrn: String): Action[AnyContent] = Action { implicit request =>
@@ -54,9 +53,11 @@ class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends Backe
     val response = if (vrn.endsWith("111")) {
       knownFactsResponse(vrn, "1111")
     } else if (vrn.endsWith("999")) {
-      knownFactsResponse(vrn, "9999", Some(LocalDateTime.of(2025, 3, 1, 0, 0)))
+      knownFactsResponse(vrn, "9999", Some(LocalDateTime.of(2025, 3, 1, 0, 0, 0, 0)))
+    } else if (vrn.endsWith("888")) {
+      knownFactsResponse(vrn, "8888", deRegDate = Some(LocalDateTime.of(2025, 8, 31, 23, 59, 59, 999999999)))
     } else {
-      knownFactsResponse(vrn, "7020", Some(LocalDateTime.of(2025, 6, 1, 0, 0)), Some(LocalDateTime.of(2025, 8, 31, 23, 59)))
+      knownFactsResponse(vrn, "7020", Some(LocalDateTime.of(2025, 1, 31, 0, 0, 0, 0)), Some(LocalDateTime.of(2025, 12, 31, 23, 59, 59, 999999999)))
     }
 
     Ok(Json.toJson(response))
