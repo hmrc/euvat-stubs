@@ -19,7 +19,7 @@ package uk.gov.hmrc.euvatstubs.controllers
 import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.euvatstubs.models.TradersKnownFacts
+import uk.gov.hmrc.euvatstubs.models.responses.{ApplicationResponse, TradersKnownFacts}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.LocalDateTime
@@ -61,5 +61,11 @@ class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends Backe
     }
 
     Ok(Json.toJson(response))
+  }
 
+  def addApplication(): Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: Saving refund application")
+
+    val response = ApplicationResponse(1, "GB123", 1)
+    Ok(Json.toJson(response))
   }

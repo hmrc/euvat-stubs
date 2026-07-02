@@ -23,7 +23,7 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.test.*
 import play.api.test.Helpers.*
 import play.api.libs.json.*
-import uk.gov.hmrc.euvatstubs.models.TradersKnownFacts
+import uk.gov.hmrc.euvatstubs.models.responses.TradersKnownFacts
 
 import java.time.LocalDateTime
 
@@ -104,6 +104,21 @@ class EuVatCoreDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       val json = contentAsJson(result)
       (json \ "tradeClass").as[String] mustBe "7020"
+    }
+  }
+
+  "EuVatCoreDataController.addApplication" should {
+    "save the refund application" in {
+      val fakeRequest = FakeRequest("POST", s"/create-application")
+
+      val result = controller.addApplication()(fakeRequest)
+
+      status(result) `mustBe` OK
+
+      val json: JsValue = contentAsJson(result)
+      (json \ "applicationId").as[Int] mustBe 1
+      (json \ "applicationNumber").as[String] mustBe "GB123"
+      (json \ "updateSeqNumber").as[Int] mustBe 1
     }
   }
 
