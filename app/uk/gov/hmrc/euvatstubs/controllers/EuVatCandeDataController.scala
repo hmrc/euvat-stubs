@@ -27,9 +27,17 @@ import javax.inject.{Inject, Singleton}
 @Singleton
 class EuVatCandeDataController @Inject() (cc: ControllerComponents) extends BackendController(cc) with Logging:
 
-  def addApplication(): Action[AnyContent] = Action { implicit request =>
-    logger.info("Stub: Creating refund application")
+  def addApplication(vrn: String): Action[AnyContent] = Action { implicit request =>
+    logger.info(s"Stub: Creating refund application for vrn: $vrn")
 
-    val response = ApplicationResponse(101, "GB123101", 1)
+    val response = if (vrn.endsWith("111")) {
+      ApplicationResponse(111, "GB123111", 1)
+    } else if (vrn.endsWith("999")) {
+      ApplicationResponse(999, "GB123999", 1)
+    } else if (vrn.endsWith("666")) {
+      ApplicationResponse(666, "GB123666", 1)
+    } else {
+      ApplicationResponse(100, "GB123100", 3)
+    }
     Ok(Json.toJson(response))
   }

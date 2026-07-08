@@ -32,18 +32,52 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
   val controller = new EuVatCandeDataController(stubControllerComponents())
 
   "EuVatCandeDataController.addApplication" should {
-    "save the refund application" in {
-      val fakeRequest = FakeRequest("POST", s"/create-application")
+    val fakeRequest = FakeRequest("POST", s"/create-application")
 
-      val result = controller.addApplication()(fakeRequest)
+    "save the refund application for vrn ending with 111" in {
+      val result = controller.addApplication("111")(fakeRequest)
 
-      status(result) `mustBe` OK
+      status(result) mustBe OK
 
       val json: JsValue = contentAsJson(result)
-      (json \ "applicationId").as[Int] mustBe 101
-      (json \ "applicationNumber").as[String] mustBe "GB123101"
+      (json \ "applicationId").as[Int] mustBe 111
+      (json \ "applicationNumber").as[String] mustBe "GB123111"
       (json \ "updateSeqNumber").as[Int] mustBe 1
     }
+
+    "save the refund application for vrn ending with 999" in {
+      val result = controller.addApplication("999")(fakeRequest)
+
+      status(result) mustBe OK
+
+      val json: JsValue = contentAsJson(result)
+      (json \ "applicationId").as[Int] mustBe 999
+      (json \ "applicationNumber").as[String] mustBe "GB123999"
+      (json \ "updateSeqNumber").as[Int] mustBe 1
+    }
+
+    "save the refund application for vrn ending with 666" in {
+      val result = controller.addApplication("666")(fakeRequest)
+
+      status(result) mustBe OK
+
+      val json: JsValue = contentAsJson(result)
+      (json \ "applicationId").as[Int] mustBe 666
+      (json \ "applicationNumber").as[String] mustBe "GB123666"
+      (json \ "updateSeqNumber").as[Int] mustBe 1
+    }
+
+    "save the refund application for any other vrn" in {
+      val result = controller.addApplication("333")(fakeRequest)
+
+      status(result) mustBe OK
+
+      val json: JsValue = contentAsJson(result)
+      (json \ "applicationId").as[Int] mustBe 100
+      (json \ "applicationNumber").as[String] mustBe "GB123100"
+      (json \ "updateSeqNumber").as[Int] mustBe 3
+    }
+
   }
 
 }
