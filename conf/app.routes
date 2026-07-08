@@ -1,3 +1,4 @@
 # microservice specific routes
 
-GET        /traders/getKnownFacts/:vrn           uk.gov.hmrc.euvatstubs.controllers.EuVatCoreDataController.getTraderByVrn(vrn: String)
+GET        /traders/getKnownFacts/:vrn           uk.gov.hmrc.euvatstubs.controllers.EuVatDataCacheController.getTraderByVrn(vrn: String)
+POST       /create-application                   uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.addApplication()

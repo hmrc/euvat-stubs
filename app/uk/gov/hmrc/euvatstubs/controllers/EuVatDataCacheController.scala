@@ -19,14 +19,14 @@ package uk.gov.hmrc.euvatstubs.controllers
 import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.euvatstubs.models.responses.{ApplicationResponse, TradersKnownFacts}
+import uk.gov.hmrc.euvatstubs.models.responses.TradersKnownFacts
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.LocalDateTime
 import javax.inject.{Inject, Singleton}
 
 @Singleton
-class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends BackendController(cc) with Logging:
+class EuVatDataCacheController @Inject() (cc: ControllerComponents) extends BackendController(cc) with Logging:
 
   private def knownFactsResponse(vrn: String,
                                  tradeClass: String,
@@ -53,19 +53,12 @@ class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends Backe
     val response = if (vrn.endsWith("111")) {
       knownFactsResponse(vrn, "1111")
     } else if (vrn.endsWith("999")) {
-      knownFactsResponse(vrn, "9999", Some(LocalDateTime.of(2025, 3, 1, 0, 0, 0, 0)))
+      knownFactsResponse(vrn, "9999", Some(LocalDateTime.of(2025, 5, 1, 0, 0, 0, 0)))
     } else if (vrn.endsWith("888")) {
       knownFactsResponse(vrn, "8888", deRegDate = Some(LocalDateTime.of(2025, 8, 31, 23, 59, 59, 999999999)))
     } else {
-      knownFactsResponse(vrn, "7020", Some(LocalDateTime.of(2025, 1, 31, 0, 0, 0, 0)), Some(LocalDateTime.of(2025, 12, 31, 23, 59, 59, 999999999)))
+      knownFactsResponse(vrn, "7020", Some(LocalDateTime.of(2025, 1, 1, 0, 0, 0, 0)), Some(LocalDateTime.of(2025, 12, 31, 23, 59, 59, 999999999)))
     }
 
-    Ok(Json.toJson(response))
-  }
-
-  def addApplication(): Action[AnyContent] = Action { implicit request =>
-    logger.info("Stub: Saving refund application")
-
-    val response = ApplicationResponse(1, "GB123", 1)
     Ok(Json.toJson(response))
   }

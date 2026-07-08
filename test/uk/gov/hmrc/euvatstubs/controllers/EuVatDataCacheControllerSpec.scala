@@ -27,14 +27,14 @@ import uk.gov.hmrc.euvatstubs.models.responses.TradersKnownFacts
 
 import java.time.LocalDateTime
 
-class EuVatCoreDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
+class EuVatDataCacheControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
   implicit val system: ActorSystem = ActorSystem("test")
   implicit val mat: Materializer = Materializer(system)
 
-  val controller = new EuVatCoreDataController(stubControllerComponents())
+  val controller = new EuVatDataCacheController(stubControllerComponents())
 
-  "EuVatCoreDataController.getTraderByVrn" should {
+  "EuVatDataCacheController.getTraderByVrn" should {
     val expectedJson = Json.obj(
       "vatRegNumber"           -> 123111,
       "traderName"             -> "TestData",
@@ -104,21 +104,6 @@ class EuVatCoreDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       val json = contentAsJson(result)
       (json \ "tradeClass").as[String] mustBe "7020"
-    }
-  }
-
-  "EuVatCoreDataController.addApplication" should {
-    "save the refund application" in {
-      val fakeRequest = FakeRequest("POST", s"/create-application")
-
-      val result = controller.addApplication()(fakeRequest)
-
-      status(result) `mustBe` OK
-
-      val json: JsValue = contentAsJson(result)
-      (json \ "applicationId").as[Int] mustBe 1
-      (json \ "applicationNumber").as[String] mustBe "GB123"
-      (json \ "updateSeqNumber").as[Int] mustBe 1
     }
   }
 

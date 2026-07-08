@@ -21,7 +21,6 @@ import play.api.libs.json.{Json, OFormat}
 import java.time.LocalDateTime
 
 case class ApplicationRequest(
-  applicantVatRegNumber: String,
   refundingCountryCode: Option[String],
   periodStartDate: Option[LocalDateTime],
   periodEndDate: Option[LocalDateTime],
