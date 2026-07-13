@@ -108,16 +108,60 @@ class EuVatCoreDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
   }
 
   "EuVatCoreDataController.getLatestApplications" should {
-    "return a valid Application" in {
-      val fakeRequest = FakeRequest("POST", s"/get-latest-application")
+    "return a valid Application when country and dates overlap" in {
+      val fakeRequest = FakeRequest("POST", "/get-latest-application")
+        .withJsonBody(
+          Json.obj(
+            "refundingCountry" -> "LV",
+            "startDate"        -> "2025-02-01T00:00:00",
+            "endDate"          -> "2025-05-31T00:00:00"
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
 
       val result = controller.getLatestApplications()(fakeRequest)
 
-      status(result) `mustBe` OK
+      println(s"Response body: ${contentAsString(result)}")
 
-      val json: JsValue = contentAsJson(result)
-      val total = (json \ "totalApplication").toOption.flatMap(_.asOpt[Int])
-      total mustBe Some(1)
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      println(s"JSON: $json")
+      (json \ "totalApplication").as[Int] mustBe 1
+    }
+    "return empty when country does not match" in {
+      val fakeRequest = FakeRequest("POST", "/get-latest-application")
+        .withBody(
+          Json.obj(
+            "refundingCountry" -> "CZ",
+            "startDate"        -> "2025-02-01T00:00:00",
+            "endDate"          -> "2025-05-31T00:00:00"
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.getLatestApplications()(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      (json \ "totalApplication").as[Int] mustBe 0
+    }
+
+    "return empty when dates do not overlap" in {
+      val fakeRequest = FakeRequest("POST", "/get-latest-application")
+        .withBody(
+          Json.obj(
+            "refundingCountry" -> "AT",
+            "startDate"        -> "2025-06-01T00:00:00",
+            "endDate"          -> "2025-08-31T00:00:00"
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.getLatestApplications()(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      (json \ "totalApplication").as[Int] mustBe 0
     }
   }
 

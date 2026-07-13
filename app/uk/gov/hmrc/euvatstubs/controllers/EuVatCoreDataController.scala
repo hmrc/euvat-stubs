@@ -17,7 +17,7 @@
 package uk.gov.hmrc.euvatstubs.controllers
 
 import play.api.Logging
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, Reads}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.euvatstubs.models.{LatestApplication, LatestApplicationResponse, TradersKnownFacts}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -57,7 +57,7 @@ class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends Backe
     } else if (vrn.endsWith("888")) {
       knownFactsResponse(vrn, "8888", deRegDate = Some(LocalDateTime.of(2025, 8, 31, 23, 59, 59, 999999999)))
     } else {
-      knownFactsResponse(vrn, "7020", Some(LocalDateTime.of(2025, 1, 31, 0, 0, 0, 0)), Some(LocalDateTime.of(2025, 12, 31, 23, 59, 59, 999999999)))
+      knownFactsResponse(vrn, "7020", Some(LocalDateTime.of(2024, 1, 31, 0, 0, 0, 0)), Some(LocalDateTime.of(2025, 12, 31, 23, 59, 59, 999999999)))
     }
 
     Ok(Json.toJson(response))
@@ -67,21 +67,41 @@ class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends Backe
   private def latestApplicationResponse(): LatestApplicationResponse = LatestApplicationResponse(
     applications = List(
       LatestApplication(
-        applicationId        = 133,
+        applicationId        = 404,
         refundingCountryCode = "LV",
         periodStartDate      = LocalDateTime.of(2025, 2, 1, 0, 0),
         periodEndDate        = LocalDateTime.of(2025, 5, 31, 23, 59),
-        applicationNumber    = "GB0000000000000133",
-        applicationStatus    = "D",
-        submissionStatus     = "S",
-        applicationVersion   = LocalDateTime.of(2025, 2, 11, 10, 38)
+        applicationNumber    = "GB0000000000000404",
+        applicationStatus    = Some("D"),
+        submissionStatus     = Some("S"),
+        applicationVersion   = LocalDateTime.of(2025, 4, 22, 0, 0, 0, 0)
       )
     ),
     totalApplication = 1
   )
 
   def getLatestApplications(): Action[AnyContent] = Action { implicit request =>
-    logger.info("Stub: returning latest Applicaitons")
-    val response = latestApplicationResponse()
+    logger.info("Stub: returning latest Applications")
+    logger.info(s"Stub: request body = ${request.body.asJson}")
+
+    val body = request.body.asJson
+
+    val response = body
+      .flatMap { json =>
+        for {
+          country   <- (json \ "refundingCountry").asOpt[String]
+          startDate <- (json \ "startDate").asOpt[LocalDateTime]
+          endDate   <- (json \ "endDate").asOpt[LocalDateTime]
+        } yield {
+          val stubApps = latestApplicationResponse().applications.filter { app =>
+            app.refundingCountryCode == country &&
+            !app.periodStartDate.isAfter(endDate) &&
+            !app.periodEndDate.isBefore(startDate)
+          }
+          LatestApplicationResponse(stubApps, stubApps.size)
+        }
+      }
+      .getOrElse(LatestApplicationResponse(List.empty, 0))
+
     Ok(Json.toJson(response))
   }
