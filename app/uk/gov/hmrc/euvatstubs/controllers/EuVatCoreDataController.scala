@@ -96,7 +96,8 @@ class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends Backe
           val stubApps = latestApplicationResponse().applications.filter { app =>
             app.refundingCountryCode == country &&
             !app.periodStartDate.isAfter(endDate) &&
-            !app.periodEndDate.isBefore(startDate)
+            !app.periodEndDate.isBefore(startDate) &&
+            app.applicationStatus.isDefined
           }
           LatestApplicationResponse(stubApps, stubApps.size)
         }
