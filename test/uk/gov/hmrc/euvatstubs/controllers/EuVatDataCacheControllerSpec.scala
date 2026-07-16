@@ -51,7 +51,7 @@ class EuVatDataCacheControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     "return tradeClass 1111 when VRN ends with 111" in {
       val vrn = "123111"
 
-      val fakeRequest = FakeRequest("GET", s"/traders/getKnownFacts/$vrn")
+      val fakeRequest = FakeRequest("GET", s"/traders/get-known-facts/$vrn")
         .withBody(Json.toJson(dummyTrader(vrn)))
 
       val result = controller.getTraderByVrn(vrn)(fakeRequest)
@@ -67,7 +67,7 @@ class EuVatDataCacheControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     "return tradeClass 9999 when VRN ends with 999" in {
       val vrn = "123999"
 
-      val fakeRequest = FakeRequest("GET", s"/traders/getKnownFacts/$vrn")
+      val fakeRequest = FakeRequest("GET", s"/traders/get-known-facts/$vrn")
         .withBody(Json.toJson(dummyTrader(vrn)))
 
       val result = controller.getTraderByVrn(vrn)(fakeRequest)
@@ -81,7 +81,7 @@ class EuVatDataCacheControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     "return tradeClass 8888 when VRN ends with 888" in {
       val vrn = "123888"
 
-      val fakeRequest = FakeRequest("GET", s"/traders/getKnownFacts/$vrn")
+      val fakeRequest = FakeRequest("GET", s"/traders/get-known-facts/$vrn")
         .withBody(Json.toJson(dummyTrader(vrn)))
 
       val result = controller.getTraderByVrn(vrn)(fakeRequest)
@@ -95,7 +95,7 @@ class EuVatDataCacheControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     "return tradeClass 7020 for all other VRNs" in {
       val vrn = "123456"
 
-      val fakeRequest = FakeRequest("GET", s"/traders/getKnownFacts/$vrn")
+      val fakeRequest = FakeRequest("GET", s"/traders/get-known-facts/$vrn")
         .withBody(Json.toJson(dummyTrader(vrn)))
 
       val result = controller.getTraderByVrn(vrn)(fakeRequest)
