@@ -86,23 +86,30 @@ class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends Backe
 
     val body = request.body.asJson
 
-    val response = body
-      .flatMap { json =>
-        for {
-          country   <- (json \ "refundingCountry").asOpt[String]
-          startDate <- (json \ "startDate").asOpt[LocalDateTime]
-          endDate   <- (json \ "endDate").asOpt[LocalDateTime]
-        } yield {
-          val stubApps = latestApplicationResponse().applications.filter { app =>
-            app.refundingCountryCode == country &&
-            !app.periodStartDate.isAfter(endDate) &&
-            !app.periodEndDate.isBefore(startDate) &&
-            app.applicationStatus.isDefined
+    val response = body.flatMap { json =>
+      (json \ "applicantVatRegNumber").asOpt[String].filter(_.nonEmpty) match {
+        case None => None // will trigger BadRequest
+        case Some(_) =>
+          for {
+            country   <- (json \ "refundingCountry").asOpt[String]
+            startDate <- (json \ "startDate").asOpt[String]
+            endDate   <- (json \ "endDate").asOpt[String]
+          } yield {
+            val reqStart = LocalDateTime.parse(startDate.take(19))
+            val reqEnd = LocalDateTime.parse(endDate.take(19))
+            val stubApps = latestApplicationResponse().applications.filter { app =>
+              app.refundingCountryCode == country &&
+              !app.periodStartDate.isAfter(reqEnd) &&
+              !app.periodEndDate.isBefore(reqStart) &&
+              app.applicationStatus.isDefined // exclude null applicationStatus like the DB does
+            }
+            LatestApplicationResponse(stubApps, stubApps.size)
           }
-          LatestApplicationResponse(stubApps, stubApps.size)
-        }
       }
-      .getOrElse(LatestApplicationResponse(List.empty, 0))
+    }
 
-    Ok(Json.toJson(response))
+    response match {
+      case Some(r) => Ok(Json.toJson(r))
+      case None    => BadRequest("applicantVatRegNumber is missing or empty")
+    }
   }

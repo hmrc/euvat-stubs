@@ -112,9 +112,10 @@ class EuVatCoreDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val fakeRequest = FakeRequest("POST", "/get-latest-application")
         .withJsonBody(
           Json.obj(
-            "refundingCountry" -> "LV",
-            "startDate"        -> "2025-02-01T00:00:00",
-            "endDate"          -> "2025-05-31T00:00:00"
+            "applicantVatRegNumber" -> "500000881",
+            "refundingCountry"      -> "LV",
+            "startDate"             -> "2025-02-01T00:00:00",
+            "endDate"               -> "2025-05-31T00:00:00"
           )
         )
         .withHeaders("Content-Type" -> "application/json")
@@ -130,11 +131,12 @@ class EuVatCoreDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
     "return empty when country does not match" in {
       val fakeRequest = FakeRequest("POST", "/get-latest-application")
-        .withBody(
+        .withJsonBody(
           Json.obj(
-            "refundingCountry" -> "CZ",
-            "startDate"        -> "2025-02-01T00:00:00",
-            "endDate"          -> "2025-05-31T00:00:00"
+            "applicantVatRegNumber" -> "500000881",
+            "refundingCountry"      -> "CZ",
+            "startDate"             -> "2025-02-01T00:00:00",
+            "endDate"               -> "2025-05-31T00:00:00"
           )
         )
         .withHeaders("Content-Type" -> "application/json")
@@ -148,11 +150,12 @@ class EuVatCoreDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
     "return empty when dates do not overlap" in {
       val fakeRequest = FakeRequest("POST", "/get-latest-application")
-        .withBody(
+        .withJsonBody(
           Json.obj(
-            "refundingCountry" -> "AT",
-            "startDate"        -> "2025-06-01T00:00:00",
-            "endDate"          -> "2025-08-31T00:00:00"
+            "applicantVatRegNumber" -> "500000881",
+            "refundingCountry"      -> "LV",
+            "startDate"             -> "2025-06-01T00:00:00",
+            "endDate"               -> "2025-08-31T00:00:00"
           )
         )
         .withHeaders("Content-Type" -> "application/json")
