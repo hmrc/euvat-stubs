@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.euvatstubs.models
+package uk.gov.hmrc.euvatstubs.models.responses
 
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.*
+
 import java.time.LocalDateTime
 
 class TradersKnownFactsSpec extends AnyWordSpec with Matchers {

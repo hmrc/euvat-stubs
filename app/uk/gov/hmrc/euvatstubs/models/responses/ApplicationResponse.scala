@@ -14,26 +14,16 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.euvatstubs.models
+package uk.gov.hmrc.euvatstubs.models.responses
 
 import play.api.libs.json.{Json, OFormat}
-import java.time.LocalDateTime
 
-case class TradersKnownFacts(
-  vatRegNumber: Int,
-  traderName: String,
-  addressLine1: String,
-  addressLine2: String,
-  addressLine3: String,
-  addressLine4: String,
-  addressLine5: String,
-  postCode: String,
-  tradeClass: String,
-  dateOfRegistration: Option[LocalDateTime],
-  dateOfDeregistration: Option[LocalDateTime],
-  missingTraderIndicator: String
+case class ApplicationResponse(
+  applicationId: Int,
+  applicationNumber: String,
+  updateSeqNumber: Int
 )
 
-object TradersKnownFacts {
-  implicit val format: OFormat[TradersKnownFacts] = Json.format[TradersKnownFacts]
+object ApplicationResponse {
+  implicit val format: OFormat[ApplicationResponse] = Json.format[ApplicationResponse]
 }
