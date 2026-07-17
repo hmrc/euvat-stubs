@@ -1,0 +1,125 @@
+/*
+ * Copyright 2026 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package uk.gov.hmrc.euvatstubs.controllers
+
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.Materializer
+import org.scalatestplus.play.*
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.test.*
+import play.api.test.Helpers.*
+import play.api.libs.json.*
+import uk.gov.hmrc.euvatstubs.models.responses.TradersKnownFacts
+
+import java.time.LocalDateTime
+
+class EuVatDataCacheControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
+
+  implicit val system: ActorSystem = ActorSystem("test")
+  implicit val mat: Materializer = Materializer(system)
+
+  val controller = new EuVatDataCacheController(stubControllerComponents())
+
+  "EuVatDataCacheController.getTraderByVrn" should {
+    val expectedJson = Json.obj(
+      "vatRegNumber"           -> 123111,
+      "traderName"             -> "TestData",
+      "addressLine1"           -> "Line 1",
+      "addressLine2"           -> "Line 2",
+      "addressLine3"           -> "Line 3",
+      "addressLine4"           -> "Line 4",
+      "addressLine5"           -> "Line 5",
+      "postCode"               -> "NE3 9TG",
+      "tradeClass"             -> "1111",
+      "missingTraderIndicator" -> "N"
+    )
+
+    "return tradeClass 1111 when VRN ends with 111" in {
+      val vrn = "123111"
+
+      val fakeRequest = FakeRequest("GET", s"/traders/get-known-facts/$vrn")
+        .withBody(Json.toJson(dummyTrader(vrn)))
+
+      val result = controller.getTraderByVrn(vrn)(fakeRequest)
+
+      status(result) mustBe OK
+
+      val json = contentAsJson(result)
+
+      json mustBe expectedJson
+      (json \ "tradeClass").as[String] mustBe "1111"
+    }
+
+    "return tradeClass 9999 when VRN ends with 999" in {
+      val vrn = "123999"
+
+      val fakeRequest = FakeRequest("GET", s"/traders/get-known-facts/$vrn")
+        .withBody(Json.toJson(dummyTrader(vrn)))
+
+      val result = controller.getTraderByVrn(vrn)(fakeRequest)
+
+      status(result) mustBe OK
+
+      val json = contentAsJson(result)
+      (json \ "tradeClass").as[String] mustBe "9999"
+    }
+
+    "return tradeClass 8888 when VRN ends with 888" in {
+      val vrn = "123888"
+
+      val fakeRequest = FakeRequest("GET", s"/traders/get-known-facts/$vrn")
+        .withBody(Json.toJson(dummyTrader(vrn)))
+
+      val result = controller.getTraderByVrn(vrn)(fakeRequest)
+
+      status(result) mustBe OK
+
+      val json = contentAsJson(result)
+      (json \ "tradeClass").as[String] mustBe "8888"
+    }
+
+    "return tradeClass 7020 for all other VRNs" in {
+      val vrn = "123456"
+
+      val fakeRequest = FakeRequest("GET", s"/traders/get-known-facts/$vrn")
+        .withBody(Json.toJson(dummyTrader(vrn)))
+
+      val result = controller.getTraderByVrn(vrn)(fakeRequest)
+
+      status(result) mustBe OK
+
+      val json = contentAsJson(result)
+      (json \ "tradeClass").as[String] mustBe "7020"
+    }
+  }
+
+  private def dummyTrader(vrn: String): TradersKnownFacts =
+    TradersKnownFacts(
+      vatRegNumber           = vrn.toInt,
+      traderName             = "Test",
+      addressLine1           = "A",
+      addressLine2           = "B",
+      addressLine3           = "C",
+      addressLine4           = "D",
+      addressLine5           = "E",
+      postCode               = "NE3 9TG",
+      tradeClass             = "dummy",
+      dateOfRegistration     = Some(LocalDateTime.now()),
+      dateOfDeregistration   = Some(LocalDateTime.now()),
+      missingTraderIndicator = "N"
+    )
+}

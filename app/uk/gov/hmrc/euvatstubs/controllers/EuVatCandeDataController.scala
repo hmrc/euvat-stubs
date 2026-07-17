@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 HM Revenue & Customs
+ * Copyright 2025 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,51 +17,31 @@
 package uk.gov.hmrc.euvatstubs.controllers
 
 import play.api.Logging
-import play.api.libs.json.{Json, Reads}
+import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.euvatstubs.models.{LatestApplication, LatestApplicationResponse, TradersKnownFacts}
+import uk.gov.hmrc.euvatstubs.models.responses.ApplicationResponse
+import uk.gov.hmrc.euvatstubs.models.{LatestApplication, LatestApplicationResponse}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.LocalDateTime
 import javax.inject.{Inject, Singleton}
 
 @Singleton
-class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends BackendController(cc) with Logging:
+class EuVatCandeDataController @Inject() (cc: ControllerComponents) extends BackendController(cc) with Logging:
 
-  private def knownFactsResponse(vrn: String,
-                                 tradeClass: String,
-                                 regDate: Option[LocalDateTime] = None,
-                                 deRegDate: Option[LocalDateTime] = None
-                                ): TradersKnownFacts = TradersKnownFacts(
-    vatRegNumber           = vrn.toIntOption.getOrElse(0),
-    traderName             = "TestData",
-    addressLine1           = "Line 1",
-    addressLine2           = "Line 2",
-    addressLine3           = "Line 3",
-    addressLine4           = "Line 4",
-    addressLine5           = "Line 5",
-    postCode               = "NE3 9TG",
-    tradeClass             = tradeClass,
-    dateOfRegistration     = regDate,
-    dateOfDeregistration   = deRegDate,
-    missingTraderIndicator = "N"
-  )
-
-  def getTraderByVrn(vrn: String): Action[AnyContent] = Action { implicit request =>
-    logger.info(s"Stub: returning known facts for VRN: $vrn")
+  def addApplication(vrn: String): Action[AnyContent] = Action { implicit request =>
+    logger.info(s"Stub: Creating refund application for vrn: $vrn")
 
     val response = if (vrn.endsWith("111")) {
-      knownFactsResponse(vrn, "1111")
+      ApplicationResponse(111, "GB123111", 1)
     } else if (vrn.endsWith("999")) {
-      knownFactsResponse(vrn, "9999", Some(LocalDateTime.of(2025, 3, 1, 0, 0, 0, 0)))
-    } else if (vrn.endsWith("888")) {
-      knownFactsResponse(vrn, "8888", deRegDate = Some(LocalDateTime.of(2025, 8, 31, 23, 59, 59, 999999999)))
+      ApplicationResponse(999, "GB123999", 1)
+    } else if (vrn.endsWith("666")) {
+      ApplicationResponse(666, "GB123666", 1)
     } else {
-      knownFactsResponse(vrn, "7020", Some(LocalDateTime.of(2024, 1, 31, 0, 0, 0, 0)), Some(LocalDateTime.of(2025, 12, 31, 23, 59, 59, 999999999)))
+      ApplicationResponse(100, "GB123100", 3)
     }
-
     Ok(Json.toJson(response))
-
   }
 
   private def latestApplicationResponse(): LatestApplicationResponse = LatestApplicationResponse(
@@ -80,9 +60,8 @@ class EuVatCoreDataController @Inject() (cc: ControllerComponents) extends Backe
     totalApplication = 1
   )
 
-  def getLatestApplications(): Action[AnyContent] = Action { implicit request =>
+  def getLatestApplications: Action[AnyContent] = Action { implicit request =>
     logger.info("Stub: returning latest Applications")
-    logger.info(s"Stub: request body = ${request.body.asJson}")
 
     val body = request.body.asJson
 
