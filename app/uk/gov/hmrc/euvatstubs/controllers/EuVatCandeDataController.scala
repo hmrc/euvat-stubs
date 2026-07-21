@@ -25,10 +25,14 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.LocalDateTime
 import scala.util.control.NonFatal
+import scala.collection.concurrent.TrieMap
 import javax.inject.{Inject, Singleton}
 
 @Singleton
 class EuVatCandeDataController @Inject() (cc: ControllerComponents) extends BackendController(cc) with Logging:
+
+  // In-memory, thread-safe state to support stateful VRN simulations (first call OK, subsequent DUP)
+  private val vrnState: TrieMap[String, Int] = TrieMap.empty
 
   def addApplication(vrn: String): Action[AnyContent] = Action { implicit request =>
     logger.info(s"Stub: Creating refund application for vrn: $vrn")
@@ -70,6 +74,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents) extends Back
       case "111111111" => "SIM-DUP"
       case "222222222" => "SIM-OK"
       case "333333333" => "SIM-EMPTY"
+      case "555555555" => "SIM-STATE"
       case "444444444" => "SIM-4XX"
       case other       => other
     }
@@ -88,7 +93,30 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents) extends Back
           case "SIM-5XX"   => Left(InternalServerError("simulated 5xx"))
           case "SIM-4XX"   => Left(BadRequest("simulated 4xx"))
           case "SIM-EMPTY" => Right(LatestApplicationResponse(Nil, 0))
-          case "SIM-DUP"   =>
+          case "SIM-STATE" =>
+            // Cycle per-3 requests for this VRN: call 1 -> OK, call 2 -> OK, call 3 -> DUP, then repeat.
+            val count = vrnState.getOrElse(applicant, 0)
+            val idx = count % 3
+            // increment counter for next call
+            vrnState.put(applicant, count + 1)
+            if (idx < 2) {
+              // return SIM-EMPTY-like response
+              Right(LatestApplicationResponse(Nil, 0))
+            } else {
+              // third in the sequence -> DUP
+              val app = LatestApplication(
+                applicationId        = 1L,
+                refundingCountryCode = (json \ "refundingCountry").asOpt[String].getOrElse("LV"),
+                periodStartDate      = LocalDateTime.of(2024, 1, 1, 0, 0),
+                periodEndDate        = LocalDateTime.of(2024, 12, 31, 23, 59),
+                applicationNumber    = s"GB-DUP-STATE-${count + 1}%04d",
+                applicationStatus    = Some("D"),
+                submissionStatus     = None,
+                applicationVersion   = LocalDateTime.now()
+              )
+              Right(LatestApplicationResponse(List(app), 1))
+            }
+          case "SIM-DUP" =>
             // return a draft application (applicationStatus = D) which should trigger duplicate validation
             val app = LatestApplication(
               applicationId        = 1L,
