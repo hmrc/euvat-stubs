@@ -18,21 +18,21 @@ package uk.gov.hmrc.euvatstubs.controllers
 
 import play.api.Logging
 import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
 import uk.gov.hmrc.euvatstubs.models.responses.ApplicationResponse
 import uk.gov.hmrc.euvatstubs.models.{LatestApplication, LatestApplicationResponse}
+import uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.LocalDateTime
 import scala.util.control.NonFatal
-import scala.collection.concurrent.TrieMap
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class EuVatCandeDataController @Inject() (cc: ControllerComponents) extends BackendController(cc) with Logging:
-
-  // In-memory, thread-safe state to support stateful VRN simulations (first call OK, subsequent DUP)
-  private val vrnState: TrieMap[String, Int] = TrieMap.empty
+class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepository: VrnStateRepository)(implicit ec: ExecutionContext)
+    extends BackendController(cc)
+    with Logging:
 
   def addApplication(vrn: String): Action[AnyContent] = Action { implicit request =>
     logger.info(s"Stub: Creating refund application for vrn: $vrn")
@@ -65,7 +65,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents) extends Back
     totalApplication = 1
   )
 
-  def getLatestApplications: Action[AnyContent] = Action { implicit request =>
+  def getLatestApplications: Action[AnyContent] = Action.async { implicit request =>
     logger.info("Stub: returning latest Applications")
 
     val body = request.body.asJson
@@ -84,40 +84,36 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents) extends Back
       val applicantOpt: Option[String] = (json \ "applicantVatRegNumber")
         .asOpt[String]
         .orElse((json \ "applicantVatRegNumber").asOpt[Long].map(_.toString))
-
       applicantOpt.map { applicant =>
         val sim = mapVrnToSim(applicant)
         logger.info(s"Stub: applicantVatRegNumber=$applicant mappedTo=$sim")
 
         sim match {
-          case "SIM-5XX"   => Left(InternalServerError("simulated 5xx"))
-          case "SIM-4XX"   => Left(BadRequest("simulated 4xx"))
-          case "SIM-EMPTY" => Right(LatestApplicationResponse(Nil, 0))
+          case "SIM-5XX"   => Future.successful(Left(InternalServerError("simulated 5xx")))
+          case "SIM-4XX"   => Future.successful(Left(BadRequest("simulated 4xx")))
+          case "SIM-EMPTY" => Future.successful(Right(LatestApplicationResponse(Nil, 0)))
           case "SIM-STATE" =>
-            // Cycle per-3 requests for this VRN: call 1 -> OK, call 2 -> OK, call 3 -> DUP, then repeat.
-            val count = vrnState.getOrElse(applicant, 0)
-            val idx = count % 3
-            // increment counter for next call
-            vrnState.put(applicant, count + 1)
-            if (idx < 2) {
-              // return SIM-EMPTY-like response
-              Right(LatestApplicationResponse(Nil, 0))
-            } else {
-              // third in the sequence -> DUP
-              val app = LatestApplication(
-                applicationId        = 1L,
-                refundingCountryCode = (json \ "refundingCountry").asOpt[String].getOrElse("LV"),
-                periodStartDate      = LocalDateTime.of(2024, 1, 1, 0, 0),
-                periodEndDate        = LocalDateTime.of(2024, 12, 31, 23, 59),
-                applicationNumber    = s"GB-DUP-STATE-${count + 1}%04d",
-                applicationStatus    = Some("D"),
-                submissionStatus     = None,
-                applicationVersion   = LocalDateTime.now()
-              )
-              Right(LatestApplicationResponse(List(app), 1))
+            // Use persistent counter: increment then decide based on previous value
+            vrnStateRepository.incrementAndGet(applicant).map { newCount =>
+              val oldCount = newCount - 1
+              val idx = oldCount % 3
+              if (idx < 2) {
+                Right(LatestApplicationResponse(Nil, 0))
+              } else {
+                val app = LatestApplication(
+                  applicationId        = 1L,
+                  refundingCountryCode = (json \ "refundingCountry").asOpt[String].getOrElse("LV"),
+                  periodStartDate      = LocalDateTime.of(2024, 1, 1, 0, 0),
+                  periodEndDate        = LocalDateTime.of(2024, 12, 31, 23, 59),
+                  applicationNumber    = f"GB-DUP-STATE-$newCount%04d",
+                  applicationStatus    = Some("D"),
+                  submissionStatus     = None,
+                  applicationVersion   = LocalDateTime.now()
+                )
+                Right(LatestApplicationResponse(List(app), 1))
+              }
             }
           case "SIM-DUP" =>
-            // return a draft application (applicationStatus = D) which should trigger duplicate validation
             val app = LatestApplication(
               applicationId        = 1L,
               refundingCountryCode = (json \ "refundingCountry").asOpt[String].getOrElse("LV"),
@@ -125,10 +121,10 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents) extends Back
               periodEndDate        = LocalDateTime.of(2025, 12, 31, 23, 59),
               applicationNumber    = "GB-DUP-0001",
               applicationStatus    = Some("D"),
-              submissionStatus     = None, // null submissionStatus to exercise null-path as well
+              submissionStatus     = None,
               applicationVersion   = LocalDateTime.now()
             )
-            Right(LatestApplicationResponse(List(app), 1))
+            Future.successful(Right(LatestApplicationResponse(List(app), 1)))
           case "SIM-OK" =>
             val app = LatestApplication(
               applicationId        = 2L,
@@ -140,9 +136,8 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents) extends Back
               submissionStatus     = Some("S"),
               applicationVersion   = LocalDateTime.now()
             )
-            Right(LatestApplicationResponse(List(app), 1))
+            Future.successful(Right(LatestApplicationResponse(List(app), 1)))
           case _ =>
-            // default behaviour: if dates provided, filter by period; otherwise return default response
             val countryOpt = (json \ "refundingCountry").asOpt[String]
             val startDateOpt = (json \ "startDate").asOpt[String]
             val endDateOpt = (json \ "endDate").asOpt[String]
@@ -166,14 +161,17 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents) extends Back
               case _                     => baseApps
             }
 
-            Right(LatestApplicationResponse(filtered, filtered.size))
+            Future.successful(Right(LatestApplicationResponse(filtered, filtered.size)))
         }
       }
     }
 
     responseOpt match {
-      case Some(Left(err)) => err
-      case Some(Right(r))  => Ok(Json.toJson(r))
-      case None            => BadRequest("applicantVatRegNumber is missing or empty")
+      case Some(futureEither) =>
+        futureEither.flatMap {
+          case Left(err: Result) => Future.successful(err)
+          case Right(r)          => Future.successful(Ok(Json.toJson(r)))
+        }
+      case None => Future.successful(BadRequest("applicantVatRegNumber is missing or empty"))
     }
   }

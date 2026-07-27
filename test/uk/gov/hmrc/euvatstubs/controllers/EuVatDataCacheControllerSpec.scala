@@ -23,6 +23,8 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.test.*
 import play.api.test.Helpers.*
 import play.api.libs.json.*
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.Application
 import uk.gov.hmrc.euvatstubs.models.responses.TradersKnownFacts
 
 import java.time.LocalDateTime
@@ -31,6 +33,12 @@ class EuVatDataCacheControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
   implicit val system: ActorSystem = ActorSystem("test")
   implicit val mat: Materializer = Materializer(system)
+
+  // Prevent the HMRC Mongo module from being initialised during test app startup
+  override def fakeApplication(): Application =
+    GuiceApplicationBuilder()
+      .disable(classOf[uk.gov.hmrc.mongo.play.PlayMongoModule])
+      .build()
 
   val controller = new EuVatDataCacheController(stubControllerComponents())
 
