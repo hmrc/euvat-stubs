@@ -18,8 +18,7 @@ package uk.gov.hmrc.euvatstubs.repositories
 
 import scala.concurrent.Future
 
-// Test-only lightweight stub of the production repository used to avoid
-// creating real MongoComponent during unit tests.
+// Shared test stub for the repository used by both unit and integration tests.
 class VrnStateRepository() {
   def incrementAndGet(vrn: String): Future[Int] = Future.successful(1)
 }

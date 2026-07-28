@@ -22,6 +22,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.inject.bind
 import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{StringContextOps, HttpReads, HeaderCarrier}
@@ -40,6 +41,10 @@ class HealthEndpointIntegrationSpec
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
       .disable(classOf[uk.gov.hmrc.mongo.play.PlayMongoModule])
+      .overrides(
+        bind[uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository]
+          .toInstance(new uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository())
+      )
       .build()
 
   "service health endpoint" should:

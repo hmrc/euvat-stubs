@@ -11,6 +11,8 @@ lazy val microservice = Project("euvat-stubs", file("."))
   .settings(
     PlayKeys.playDefaultPort := 18504,
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
+    // include shared test sources for unit and integration tests
+    Test / unmanagedSourceDirectories += (ThisBuild / baseDirectory).value / "test_shared" / "scala",
     // https://www.scala-lang.org/2021/01/12/configuring-and-suppressing-warnings.html
     // suppress warnings in generated routes files
     scalacOptions ++= Seq(
@@ -25,3 +27,4 @@ lazy val it = project
   .dependsOn(microservice % "test->test")
   .settings(DefaultBuildSettings.itSettings())
   .settings(libraryDependencies ++= AppDependencies.it)
+  .settings(Test / unmanagedSourceDirectories += (ThisBuild / baseDirectory).value / "test_shared" / "scala")
