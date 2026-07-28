@@ -39,6 +39,7 @@ class HealthEndpointIntegrationSpec
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
+      .disable(classOf[uk.gov.hmrc.mongo.play.PlayMongoModule])
       .build()
 
   "service health endpoint" should:
