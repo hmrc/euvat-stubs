@@ -23,13 +23,20 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.json.*
 import play.api.test.*
 import play.api.test.Helpers.*
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
   implicit val system: ActorSystem = ActorSystem("test")
   implicit val mat: Materializer = Materializer(system)
 
-  val controller = new EuVatCandeDataController(stubControllerComponents())
+  // Use the test stub repository (see test/.../repositories/VrnStateRepository.scala)
+  implicit val ec: scala.concurrent.ExecutionContext = global
+
+  val controller: EuVatCandeDataController = new EuVatCandeDataController(
+    stubControllerComponents(),
+    new uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository()
+  )
 
   "EuVatCandeDataController.addApplication" should {
     val fakeRequest = FakeRequest("POST", s"/create-application")
