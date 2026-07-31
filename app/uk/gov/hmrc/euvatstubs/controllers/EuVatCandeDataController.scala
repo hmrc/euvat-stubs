@@ -19,7 +19,8 @@ package uk.gov.hmrc.euvatstubs.controllers
 import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
-import uk.gov.hmrc.euvatstubs.models.responses.ApplicationResponse
+import uk.gov.hmrc.euvatstubs.models.requests.AddPurchaseRequest
+import uk.gov.hmrc.euvatstubs.models.responses.{AddPurchaseResponse, ApplicationResponse}
 import uk.gov.hmrc.euvatstubs.models.{LatestApplication, LatestApplicationResponse}
 import uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -173,5 +174,18 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
           case Right(r)          => Future.successful(Ok(Json.toJson(r)))
         }
       case None => Future.successful(BadRequest("applicantVatRegNumber is missing or empty"))
+    }
+  }
+
+  def addPurchase: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: adding purchase")
+    request.body.asJson.flatMap(_.asOpt[AddPurchaseRequest]) match {
+      case None => BadRequest("Invalid or missing request body")
+      case Some(req) =>
+        req.applicationId match {
+          case 500 => InternalServerError("simulated 5xx")
+          case 400 => BadRequest("simulated 4xx")
+          case _   => Ok(Json.toJson(AddPurchaseResponse(itemNumber = 4, updateSequenceNumber = 1)))
+        }
     }
   }
