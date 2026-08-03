@@ -184,3 +184,29 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
       case Some(_) => Ok(Json.toJson(AddPurchaseResponse(itemNumber = 4, updateSequenceNumber = 1)))
     }
   }
+
+  def getSupplierTaxIdentifierCount(): Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: getSupplierTaxIdentifierCount called")
+
+    val body = request.body.asJson
+
+    val resultOpt: Option[Result] = body.flatMap { json =>
+      val taxOpt = (json \ "taxIdentifier").asOpt[String]
+      taxOpt.map { tax =>
+        tax match {
+          case "500" => InternalServerError("simulated 5xx")
+          case "400" => BadRequest("simulated 4xx")
+          case _ =>
+            val duplicateCount =
+              if (tax.endsWith("111")) 1
+              else if (tax.endsWith("999")) 2
+              else if (tax.endsWith("666")) 3
+              else 0
+
+            Ok(Json.obj("duplicateCount" -> duplicateCount))
+        }
+      }
+    }
+
+    resultOpt.getOrElse(BadRequest("taxIdentifier is missing or invalid"))
+  }

@@ -145,6 +145,192 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val json = contentAsJson(result)
       (json \ "totalApplication").as[Int] mustBe 0
     }
+
+    "return base apps when date parsing fails" in {
+      val fakeRequest = FakeRequest("POST", "/get-latest-application")
+        .withJsonBody(
+          Json.obj(
+            "applicantVatRegNumber" -> "500000881",
+            "refundingCountry"      -> "LV",
+            "startDate"             -> "not-a-date",
+            "endDate"               -> "also-not-a-date"
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.getLatestApplications()(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      (json \ "totalApplication").as[Int] mustBe 1
+    }
+
+    "simulate SIM-5XX and return 500" in {
+      val fakeRequest = FakeRequest("POST", "/get-latest-application")
+        .withJsonBody(Json.obj("applicantVatRegNumber" -> "111111115"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.getLatestApplications()(fakeRequest)
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+
+    "simulate SIM-4XX and return 400" in {
+      val fakeRequest = FakeRequest("POST", "/get-latest-application")
+        .withJsonBody(Json.obj("applicantVatRegNumber" -> "444444444"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.getLatestApplications()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "simulate SIM-EMPTY and return empty list" in {
+      val fakeRequest = FakeRequest("POST", "/get-latest-application")
+        .withJsonBody(Json.obj("applicantVatRegNumber" -> "333333333"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.getLatestApplications()(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      (json \ "totalApplication").as[Int] mustBe 0
+    }
+
+    "simulate SIM-STATE and return empty (test stub returns 1)" in {
+      val fakeRequest = FakeRequest("POST", "/get-latest-application")
+        .withJsonBody(Json.obj("applicantVatRegNumber" -> "555555555"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.getLatestApplications()(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      (json \ "totalApplication").as[Int] mustBe 0
+    }
+
+    "simulate SIM-STATE and return application when counter triggers" in {
+      val repo = new uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository() {
+        override def incrementAndGet(vrn: String) = scala.concurrent.Future.successful(3)
+      }
+      val ctrl = new EuVatCandeDataController(stubControllerComponents(), repo)
+
+      val fakeRequest = FakeRequest("POST", "/get-latest-application")
+        .withJsonBody(Json.obj("applicantVatRegNumber" -> "555555555"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = ctrl.getLatestApplications()(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      (json \ "totalApplication").as[Int] mustBe 1
+      val apps = (json \ "applications").as[JsArray].value
+      (apps.head \ "applicationNumber").as[String] must include("GB-DUP-STATE-")
+    }
+
+    "simulate SIM-DUP and return duplicate application" in {
+      val fakeRequest = FakeRequest("POST", "/get-latest-application")
+        .withJsonBody(Json.obj("applicantVatRegNumber" -> "111111111"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.getLatestApplications()(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      println(s"SIM-DUP response: ${contentAsString(result)}")
+      (json \ "totalApplication").as[Int] mustBe 1
+      val apps = (json \ "applications").as[JsArray].value
+      (apps.head \ "applicationNumber").as[String] mustBe "GB-DUP-0001"
+    }
+
+    "simulate SIM-OK and return OK application" in {
+      val fakeRequest = FakeRequest("POST", "/get-latest-application")
+        .withJsonBody(Json.obj("applicantVatRegNumber" -> "222222222"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.getLatestApplications()(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      println(s"SIM-OK response: ${contentAsString(result)}")
+      (json \ "totalApplication").as[Int] mustBe 1
+      val apps = (json \ "applications").as[JsArray].value
+      val first = apps.head
+      (first \ "applicationNumber").as[String] mustBe "GB-OK-0001"
+      (first \ "applicationStatus").as[String] mustBe "A"
+      (first \ "submissionStatus").as[String] mustBe "S"
+    }
+  }
+
+  "EuVatCandeDataController.getSupplierTaxIdentifierCount" should {
+    "return duplicateCount 1 for taxIdentifier ending 111" in {
+      val fakeRequest = FakeRequest("POST", "/get-supplier-taxIdentifier-count")
+        .withJsonBody(
+          Json.obj(
+            "applicationId" -> 1,
+            "itemNumber"    -> 1,
+            "taxIdentifier" -> "ABC111",
+            "invoiceNumber" -> "INV-1"
+          )
+        )
+
+      val result = controller.getSupplierTaxIdentifierCount()(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      (json \ "duplicateCount").as[Int] mustBe 1
+    }
+
+    "return duplicateCount 2 for taxIdentifier ending 999" in {
+      val fakeRequest = FakeRequest("POST", "/get-supplier-taxIdentifier-count")
+        .withJsonBody(
+          Json.obj(
+            "applicationId" -> 1,
+            "itemNumber"    -> 1,
+            "taxIdentifier" -> "XYZ999",
+            "invoiceNumber" -> "INV-2"
+          )
+        )
+
+      val result = controller.getSupplierTaxIdentifierCount()(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      (json \ "duplicateCount").as[Int] mustBe 2
+    }
+
+    "return duplicateCount 0 for other taxIdentifier" in {
+      val fakeRequest = FakeRequest("POST", "/get-supplier-taxIdentifier-count")
+        .withJsonBody(
+          Json.obj(
+            "applicationId" -> 1,
+            "itemNumber"    -> 1,
+            "taxIdentifier" -> "NO_MATCH",
+            "invoiceNumber" -> "INV-3"
+          )
+        )
+
+      val result = controller.getSupplierTaxIdentifierCount()(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      (json \ "duplicateCount").as[Int] mustBe 0
+    }
+
+    "return BadRequest when taxIdentifier is missing" in {
+      val fakeRequest = FakeRequest("POST", "/get-supplier-taxIdentifier-count")
+        .withJsonBody(
+          Json.obj(
+            "applicationId" -> 1,
+            "itemNumber"    -> 1,
+            "invoiceNumber" -> "INV-4"
+          )
+        )
+
+      val result = controller.getSupplierTaxIdentifierCount()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
   }
 
   "EuVatCandeDataController.addPurchase" should {
