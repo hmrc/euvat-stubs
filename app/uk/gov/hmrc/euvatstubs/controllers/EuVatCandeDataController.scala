@@ -234,11 +234,18 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         InternalServerError("Simulated database connectivity failure")
 
       case Some(req) =>
-        val count = req.vatNumber.takeRight(3) match {
-          case "111" => 1
-          case "222" => 2
-          case _     => 0
-        }
+        // Duplicate only when the VRN suffix triggers AND the invoice number is the "known duplicate" value.
+        // Changing either the VRN (to a non-111/222 suffix) or the invoice (away from DUP) clears the warning.
+        val count =
+          if (req.invoiceNumber == "DUP") {
+            req.vatNumber.takeRight(3) match {
+              case "111" => 1
+              case "222" => 2
+              case _     => 0
+            }
+          } else 0
+
+        logger.info(s"Stub getSupplierVrnCount: vatNumber=${req.vatNumber}, invoiceNumber=${req.invoiceNumber}, count=$count")
         Ok(Json.toJson(SupplierVrnCountResponse(count)))
     }
   }

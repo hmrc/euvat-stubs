@@ -364,14 +364,14 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
   "EuVatCandeDataController.getSupplierVrnCount" should {
 
-    def requestWith(vatNumber: String) =
+    def requestWith(vatNumber: String, invoiceNumber: String = "DUP") =
       FakeRequest("POST", "/get-supplier-vrn-count")
         .withJsonBody(
           Json.obj(
             "applicationId" -> 133,
             "itemNumber"    -> 4,
             "vatNumber"     -> vatNumber,
-            "invoiceNumber" -> "a444"
+            "invoiceNumber" -> invoiceNumber
           )
         )
         .withHeaders("Content-Type" -> "application/json")
