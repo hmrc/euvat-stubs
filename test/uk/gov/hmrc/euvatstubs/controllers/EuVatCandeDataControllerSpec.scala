@@ -149,13 +149,19 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
   "EuVatCandeDataController.addPurchase" should {
 
-    def requestWith(applicationId: Long) =
+    val validRequest =
       FakeRequest("POST", "/add-purchase")
-        .withJsonBody(Json.obj("applicationId" -> applicationId, "goodsDescriptionCategory" -> "1"))
+        .withJsonBody(
+          Json.obj(
+            "applicationId"            -> 123456,
+            "goodsDescriptionCategory" -> "1",
+            "updateSequenceNumber"     -> 1
+          )
+        )
         .withHeaders("Content-Type" -> "application/json")
 
     "return an item number and update sequence number for a valid request" in {
-      val result = controller.addPurchase()(requestWith(123456))
+      val result = controller.addPurchase()(validRequest)
 
       status(result) mustBe OK
       val json = contentAsJson(result)

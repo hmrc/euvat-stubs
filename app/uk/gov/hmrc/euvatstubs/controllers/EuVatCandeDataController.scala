@@ -180,12 +180,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
   def addPurchase: Action[AnyContent] = Action { implicit request =>
     logger.info("Stub: adding purchase")
     request.body.asJson.flatMap(_.asOpt[AddPurchaseRequest]) match {
-      case None => BadRequest("Invalid or missing request body")
-      case Some(req) =>
-        req.applicationId match {
-          case 500 => InternalServerError("simulated 5xx")
-          case 400 => BadRequest("simulated 4xx")
-          case _   => Ok(Json.toJson(AddPurchaseResponse(itemNumber = 4, updateSequenceNumber = 1)))
-        }
+      case None    => BadRequest("Invalid or missing request body")
+      case Some(_) => Ok(Json.toJson(AddPurchaseResponse(itemNumber = 4, updateSequenceNumber = 1)))
     }
   }

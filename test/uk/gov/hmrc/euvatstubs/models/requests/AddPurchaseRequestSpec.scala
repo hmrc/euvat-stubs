@@ -40,7 +40,7 @@ class AddPurchaseRequestSpec extends AnyWordSpec with Matchers {
     taxableAmount              = None,
     vatAmount                  = None,
     deductibleVatAmount        = None,
-    updateSequenceNumber       = None
+    updateSequenceNumber       = 1
   )
 
   "AddPurchaseRequest JSON format" should {
@@ -53,7 +53,8 @@ class AddPurchaseRequestSpec extends AnyWordSpec with Matchers {
       val result = Json
         .obj(
           "applicationId"            -> 123456,
-          "goodsDescriptionCategory" -> "1"
+          "goodsDescriptionCategory" -> "1",
+          "updateSequenceNumber"     -> 1
         )
         .as[AddPurchaseRequest]
       result.applicationId shouldBe 123456L
