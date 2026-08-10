@@ -5,4 +5,4 @@ POST       /create-application/:vrn             uk.gov.hmrc.euvatstubs.controlle
 POST       /get-latest-application              uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getLatestApplications
 POST       /add-purchase                        uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.addPurchase
 POST       /get-supplier-taxIdentifier-count   uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getSupplierTaxIdentifierCount
-POST        /get-supplier-vrn-count              uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getSupplierVrnCount
+POST       /get-supplier-vrn-count              uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getSupplierVrnCount
