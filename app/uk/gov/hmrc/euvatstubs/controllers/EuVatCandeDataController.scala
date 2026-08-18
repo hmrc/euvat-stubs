@@ -184,3 +184,55 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
       case Some(_) => Ok(Json.toJson(AddPurchaseResponse(itemNumber = 4, updateSequenceNumber = 1)))
     }
   }
+
+  def getSupplierTaxIdentifierCount(): Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: getSupplierTaxIdentifierCount called")
+
+    val body = request.body.asJson
+
+    val resultOpt: Option[Result] = body.flatMap { json =>
+      // accept invoiceNumber and taxIdentifier values
+      val invoiceOpt: Option[String] = (json \ "invoiceNumber").asOpt[String]
+      val taxOpt: Option[String] = (json \ "taxIdentifier").asOpt[String]
+
+      // invoice-only simulated errors
+      val fromInvoiceSim: Option[Result] = invoiceOpt.flatMap {
+        case "INV-500" => Some(InternalServerError("simulated 5xx"))
+        case "INV-400" => Some(BadRequest("simulated 4xx"))
+        case _         => None
+      }
+
+      // explicit (taxIdentifier, invoiceNumber) -> duplicateCount mapping
+      val pairDupMap: Map[(String, String), Int] = Map(
+        ("TID-0", "INV-0")  -> 0,
+        ("TID-1", "INV-1")  -> 1,
+        ("TID-2", "INV-2")  -> 2,
+        ("TID123", "INV-1") -> 0
+      )
+
+      val fromPairDup: Option[Result] = for {
+        t <- taxOpt
+        i <- invoiceOpt
+        n <- pairDupMap.get((t, i))
+      } yield Ok(Json.obj("duplicateCount" -> n))
+
+      fromInvoiceSim orElse fromPairDup orElse {
+        taxOpt.map { tax =>
+          tax match {
+            case "500" => InternalServerError("simulated 5xx")
+            case "400" => BadRequest("simulated 4xx")
+            case _ =>
+              val duplicateCount =
+                if (tax.endsWith("111")) 1
+                else if (tax.endsWith("999")) 2
+                else if (tax.endsWith("666")) 3
+                else 0
+
+              Ok(Json.obj("duplicateCount" -> duplicateCount))
+          }
+        }
+      }
+    }
+
+    resultOpt.getOrElse(BadRequest("taxIdentifier or invoiceNumber is missing or invalid"))
+  }
