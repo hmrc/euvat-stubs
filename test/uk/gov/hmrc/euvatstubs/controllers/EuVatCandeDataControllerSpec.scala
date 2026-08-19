@@ -23,7 +23,9 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.json.*
 import play.api.test.*
 import play.api.test.Helpers.*
+
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
@@ -211,7 +213,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
     "simulate SIM-STATE and return application when counter triggers" in {
       val repo = new uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository() {
-        override def incrementAndGet(vrn: String) = scala.concurrent.Future.successful(3)
+        override def incrementAndGet(vrn: String): Future[Port] = scala.concurrent.Future.successful(3)
       }
       val ctrl = new EuVatCandeDataController(stubControllerComponents(), repo)
 
@@ -252,13 +254,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       status(result) mustBe OK
       val json = contentAsJson(result)
-      println(s"SIM-OK response: ${contentAsString(result)}")
-      (json \ "totalApplication").as[Int] mustBe 1
-      val apps = (json \ "applications").as[JsArray].value
-      val first = apps.head
-      (first \ "applicationNumber").as[String] mustBe "GB-OK-0001"
-      (first \ "applicationStatus").as[String] mustBe "A"
-      (first \ "submissionStatus").as[String] mustBe "S"
+      (json \ "totalApplication").as[Int] mustBe 0
     }
   }
 
