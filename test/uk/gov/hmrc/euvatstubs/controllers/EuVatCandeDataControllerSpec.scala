@@ -362,4 +362,56 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
   }
 
+  "EuVatCandeDataController.getSupplierVrnCount" should {
+
+    def requestWith(vatNumber: String, invoiceNumber: String = "DUP") =
+      FakeRequest("POST", "/get-supplier-vrn-count")
+        .withJsonBody(
+          Json.obj(
+            "applicationId" -> 133,
+            "itemNumber"    -> 4,
+            "vatNumber"     -> vatNumber,
+            "invoiceNumber" -> invoiceNumber
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+    "return a duplicate count of 1 for a vat number ending with 111" in {
+      val result = controller.getSupplierVrnCount()(requestWith("500000111"))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "duplicateCount").as[Int] mustBe 1
+    }
+
+    "return a duplicate count of 2 for a vat number ending with 222" in {
+      val result = controller.getSupplierVrnCount()(requestWith("500000222"))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "duplicateCount").as[Int] mustBe 2
+    }
+
+    "return a duplicate count of 0 for any other vat number" in {
+      val result = controller.getSupplierVrnCount()(requestWith("500000881"))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "duplicateCount").as[Int] mustBe 0
+    }
+
+    "return 500 for a vat number ending with 500" in {
+      val result = controller.getSupplierVrnCount()(requestWith("500000500"))
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+
+    "return 400 when the request body is invalid" in {
+      val fakeRequest = FakeRequest("POST", "/get-supplier-vrn-count")
+        .withJsonBody(Json.obj("invalid" -> "body"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.getSupplierVrnCount()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+  }
+
 }
