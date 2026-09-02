@@ -232,7 +232,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
     "simulate SIM-DUP and return duplicate application" in {
       val fakeRequest = FakeRequest("POST", "/get-latest-application")
-        .withJsonBody(Json.obj("applicantVatRegNumber" -> "111111111"))
+        .withJsonBody(Json.obj("applicantVatRegNumber" -> "999900003"))
         .withHeaders("Content-Type" -> "application/json")
 
       val result = controller.getLatestApplications()(fakeRequest)

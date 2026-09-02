@@ -72,7 +72,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     val body = request.body.asJson
     def mapVrnToSim(v: String): String = v match {
       case "111111115"               => "SIM-5XX"
-      case "111111111"               => "SIM-DUP" // Duplicate found, returns record with one or more total applications
+      case "999900003"               => "SIM-DUP" // Duplicate found, returns record with one or more total applications
       case "222222222" | "333333333" => "SIM-OK" // No duplicate, returns no record with zero total application
       case "444444444"               => "SIM-4XX"
       case "555555555"               => "SIM-STATE"
