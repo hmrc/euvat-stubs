@@ -399,7 +399,6 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
     "return 500 for a vat number ending with 500" in {
       val result = controller.getSupplierVrnCount()(requestWith("500000500"))
-
       status(result) mustBe INTERNAL_SERVER_ERROR
     }
 
@@ -409,6 +408,196 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
         .withHeaders("Content-Type" -> "application/json")
 
       val result = controller.getSupplierVrnCount()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return 0 when invoice is not DUP even if VRN suffix would duplicate" in {
+      val result = controller.getSupplierVrnCount()(requestWith("500000111", "NOT_DUP"))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "duplicateCount").as[Int] mustBe 0
+    }
+  }
+
+  "EuVatCandeDataController.updatePurchaseDetails" should {
+    "return updateSequenceNumber for valid UpdatePurchaseRequest" in {
+      val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"            -> 123456,
+            "goodsDescriptionCategory" -> "1",
+            "updateSequenceNumber"     -> 7
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.updatePurchaseDetails()(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      json.as[JsObject].value("updateSequenceNumber").as[Int] mustBe 7
+    }
+
+    "accept full alternative request and return provided updateSequenceNumber" in {
+      val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"               -> 777L,
+            "itemNumber"                  -> 5,
+            "goodsDescriptionCategory"    -> "2",
+            "goodsDescriptionSubCategory" -> "sub",
+            "goodsDescriptionText"        -> "desc",
+            "simplifiedInvoiceIndicator"  -> "Y",
+            "supplierName"                -> "Acme Ltd",
+            "supplierAddressLine1"        -> "1 Road",
+            "supplierAddressLine2"        -> "Suite",
+            "supplierAddressLine3"        -> "Area",
+            "supplierVatNumber"           -> "500000111",
+            "supplierTaxIdentifier"       -> "TAX111",
+            "invoiceDate"                 -> "2025-03-10T12:34:56",
+            "invoiceNumber"               -> "INV-99",
+            "currencyCode"                -> "GBP",
+            "taxableAmount"               -> 100.5,
+            "vatAmount"                   -> 20.1,
+            "deductibleVatAmount"         -> 20.1,
+            "updateSequenceNumber"        -> 42
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.updatePurchaseDetails()(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      json.as[JsObject].value("updateSequenceNumber").as[Int] mustBe 42
+    }
+
+    "succeed when goodsDescriptionText is absent" in {
+      val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"               -> 404,
+            "itemNumber"                  -> 4,
+            "goodsDescriptionCategory"    -> "10",
+            "goodsDescriptionSubCategory" -> "10.4.1",
+            "simplifiedInvoiceIndicator"  -> "N",
+            "supplierName"                -> "Finnish International",
+            "supplierAddressLine1"        -> "356 High Street",
+            "invoiceNumber"               -> "a444",
+            "currencyCode"                -> "EUR",
+            "taxableAmount"               -> 1000,
+            "vatAmount"                   -> 99,
+            "deductibleVatAmount"         -> 40,
+            "updateSequenceNumber"        -> 2
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.updatePurchaseDetails()(fakeRequest)
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 2
+    }
+
+    "succeed when goodsDescriptionSubCategory is absent" in {
+      val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"              -> 404,
+            "itemNumber"                 -> 4,
+            "goodsDescriptionCategory"   -> "10",
+            "goodsDescriptionText"       -> "office stationery and consumables",
+            "simplifiedInvoiceIndicator" -> "N",
+            "supplierName"               -> "Finnish International",
+            "supplierAddressLine1"       -> "356 High Street",
+            "invoiceNumber"              -> "a444",
+            "currencyCode"               -> "EUR",
+            "taxableAmount"              -> 1000,
+            "vatAmount"                  -> 99,
+            "deductibleVatAmount"        -> 40,
+            "updateSequenceNumber"       -> 3
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.updatePurchaseDetails()(fakeRequest)
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 3
+    }
+
+    "return BadRequest when no JSON body provided" in {
+      val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.updatePurchaseDetails()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "accept null invoiceDate" in {
+      val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"            -> 404,
+            "goodsDescriptionCategory" -> "10",
+            "invoiceDate"              -> JsNull,
+            "updateSequenceNumber"     -> 5
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.updatePurchaseDetails()(fakeRequest)
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 5
+    }
+
+    "simulate INV-UP-500 and return 500" in {
+      val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(Json.obj("invoiceNumber" -> "INV-UP-500"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.updatePurchaseDetails()(fakeRequest)
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+
+    "accept and ignore an extra mode field" in {
+      val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"            -> 123456,
+            "goodsDescriptionCategory" -> "1",
+            "updateSequenceNumber"     -> 9,
+            "mode"                     -> "FULL"
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.updatePurchaseDetails()(fakeRequest)
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 9
+    }
+
+    "return BadRequest when required fields are missing" in {
+      val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(Json.obj())
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.updatePurchaseDetails()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "simulate INV-UP-400 and return 400" in {
+      val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(Json.obj("invoiceNumber" -> "INV-UP-400"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.updatePurchaseDetails()(fakeRequest)
 
       status(result) mustBe BAD_REQUEST
     }

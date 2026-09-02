@@ -19,16 +19,16 @@ package uk.gov.hmrc.euvatstubs.controllers
 import play.api.Logging
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
-import uk.gov.hmrc.euvatstubs.models.requests.AddPurchaseRequest
+import uk.gov.hmrc.euvatstubs.models.requests.{AddPurchaseRequest, UpdatePurchaseDetailsRequest}
 import uk.gov.hmrc.euvatstubs.models.responses.{AddPurchaseResponse, ApplicationResponse}
 import uk.gov.hmrc.euvatstubs.models.{LatestApplication, LatestApplicationResponse, SupplierVrnCountRequest, SupplierVrnCountResponse}
 import uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.LocalDateTime
-import scala.util.control.NonFatal
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 @Singleton
 class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepository: VrnStateRepository)(implicit ec: ExecutionContext)
@@ -247,5 +247,91 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
 
         logger.info(s"Stub getSupplierVrnCount: vatNumber=${req.vatNumber}, invoiceNumber=${req.invoiceNumber}, count=$count")
         Ok(Json.toJson(SupplierVrnCountResponse(count)))
+
+    }
+  }
+
+  def updatePurchaseDetails: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: updatePurchaseDetails called")
+
+    val bodyOpt = request.body.asJson
+
+    bodyOpt match {
+      case None       => BadRequest("Invalid or missing request body")
+      case Some(json) =>
+        // invoice-only simulated errors
+        (json \ "invoiceNumber").asOpt[String] match {
+          case Some("INV-UP-500") => InternalServerError("simulated 5xx")
+          case Some("INV-UP-400") => BadRequest("simulated 4xx")
+          case _                  =>
+            // Try to read as UpdatePurchaseDetailsRequest first (preferred form)
+            json.asOpt[UpdatePurchaseDetailsRequest] match {
+              case Some(req) => Ok(Json.obj("updateSequenceNumber" -> req.updateSequenceNumber))
+              case None      =>
+                // accept alternative key names as specified by the consumer
+                val applicationIdOpt: Option[Long] = (json \ "applicationId").asOpt[Long]
+                val goodsDescriptionCategoryOpt: Option[String] = (json \ "goodsDescriptionCategory").asOpt[String]
+                val goodsDescriptionTextOpt: Option[String] = (json \ "goodsDescriptionText").asOpt[String]
+                val purchaseSubcategoryOpt: Option[String] = (json \ "goodsDescriptionSubCategory")
+                  .asOpt[String]
+                  .orElse((json \ "purchaseSubcategory").asOpt[String])
+                val simplifiedInvoiceIndicatorOpt = (json \ "simplifiedInvoiceIndicator").asOpt[String]
+                val supplierNameOpt = (json \ "supplierName").asOpt[String]
+                val supplierAddress1Opt = (json \ "supplierAddressLine1")
+                  .asOpt[String]
+                  .orElse((json \ "supplierAddress1").asOpt[String])
+                val supplierAddress2Opt = (json \ "supplierAddressLine2")
+                  .asOpt[String]
+                  .orElse((json \ "supplierAddress2").asOpt[String])
+                val supplierAddress3Opt = (json \ "supplierAddressLine3")
+                  .asOpt[String]
+                  .orElse((json \ "supplierAddress3").asOpt[String])
+                val supplierVatRegNumberOpt = (json \ "supplierVatNumber")
+                  .asOpt[String]
+                  .orElse((json \ "supplierVatRegNumber").asOpt[String])
+                val supplierTaxIdentifierOpt = (json \ "supplierTaxIdentifier").asOpt[String]
+                val invoiceDateOpt = (json \ "invoiceDate").asOpt[String].flatMap { s =>
+                  try Some(LocalDateTime.parse(s.take(19)))
+                  catch { case NonFatal(_) => None }
+                }
+                val invoiceNumberOpt = (json \ "invoiceNumber").asOpt[String]
+                val currencyCodeOpt = (json \ "currencyCode").asOpt[String]
+                val taxableAmountOpt = (json \ "taxableAmount").asOpt[BigDecimal]
+                val vatAmountOpt = (json \ "vatAmount").asOpt[BigDecimal]
+                val deductibleVatAmountOpt = (json \ "deductibleVatAmount").asOpt[BigDecimal]
+                val updateSequenceNumberOpt = (json \ "updateSequenceNumber").asOpt[Int]
+                // itemNumber is not used by the stub; read if present
+                val itemNumberOpt = (json \ "itemNumber").asOpt[Int]
+
+                (applicationIdOpt, goodsDescriptionCategoryOpt, updateSequenceNumberOpt) match {
+                  case (Some(applicationId), Some(goodsDescriptionCategory), Some(updateSeq)) =>
+                    val req = uk.gov.hmrc.euvatstubs.models.requests.UpdatePurchaseDetailsRequest(
+                      applicationId               = applicationId,
+                      itemNumber                  = itemNumberOpt.getOrElse(0),
+                      goodsDescriptionCategory    = goodsDescriptionCategory,
+                      goodsDescriptionSubCategory = purchaseSubcategoryOpt,
+                      goodsDescriptionText        = goodsDescriptionTextOpt,
+                      simplifiedInvoiceIndicator  = simplifiedInvoiceIndicatorOpt,
+                      supplierName                = supplierNameOpt,
+                      supplierAddress1            = supplierAddress1Opt,
+                      supplierAddress2            = supplierAddress2Opt,
+                      supplierAddress3            = supplierAddress3Opt,
+                      supplierVatRegNumber        = supplierVatRegNumberOpt,
+                      supplierTaxIdentifier       = supplierTaxIdentifierOpt,
+                      invoiceDate                 = invoiceDateOpt,
+                      invoiceNumber               = invoiceNumberOpt,
+                      currencyCode                = currencyCodeOpt,
+                      taxableAmount               = taxableAmountOpt,
+                      vatAmount                   = vatAmountOpt,
+                      deductibleVatAmount         = deductibleVatAmountOpt,
+                      updateSequenceNumber        = updateSeq
+                    )
+
+                    Ok(Json.obj("updateSequenceNumber" -> req.updateSequenceNumber))
+
+                  case _ => BadRequest("Invalid or missing request body")
+                }
+            }
+        }
     }
   }
