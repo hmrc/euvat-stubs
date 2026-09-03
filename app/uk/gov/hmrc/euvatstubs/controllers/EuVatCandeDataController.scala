@@ -19,8 +19,8 @@ package uk.gov.hmrc.euvatstubs.controllers
 import play.api.Logging
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
-import uk.gov.hmrc.euvatstubs.models.requests.AddPurchaseRequest
-import uk.gov.hmrc.euvatstubs.models.responses.{AddPurchaseResponse, ApplicationResponse}
+import uk.gov.hmrc.euvatstubs.models.requests.{AddPurchaseRequest, GetPurchaseDetailsRequest}
+import uk.gov.hmrc.euvatstubs.models.responses.{AddPurchaseResponse, ApplicationResponse, GetPurchaseDetailsResponse}
 import uk.gov.hmrc.euvatstubs.models.{LatestApplication, LatestApplicationResponse, SupplierVrnCountRequest, SupplierVrnCountResponse}
 import uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -168,6 +168,34 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     request.body.asJson.flatMap(_.asOpt[AddPurchaseRequest]) match {
       case None    => BadRequest("Invalid or missing request body")
       case Some(_) => Ok(Json.toJson(AddPurchaseResponse(itemNumber = 4, updateSequenceNumber = 1)))
+    }
+  }
+
+  private val purchaseDetailsResponse: GetPurchaseDetailsResponse = GetPurchaseDetailsResponse(
+    goodsDescriptionCode       = "1",
+    goodsDescriptionSubCode    = Some("1.1"),
+    goodsDescriptionText       = Some("Fuel"),
+    simplifiedInvoiceIndicator = Some("N"),
+    supplierName               = Some("Supplier Ltd"),
+    supplierAddressLine1       = Some("1 High Street"),
+    supplierAddressLine2       = Some("Riga"),
+    supplierAddressLine3       = None,
+    supplierVatNumber          = Some("LV40003567907"),
+    supplierTaxIdentifier      = None,
+    invoiceDate                = Some(LocalDateTime.of(2025, 3, 15, 0, 0)),
+    invoiceNumber              = Some("INV-001"),
+    currencyCode               = Some("EUR"),
+    taxableAmount              = Some(BigDecimal("100.50")),
+    vatAmount                  = Some(BigDecimal("21.10")),
+    deductibleVatAmount        = Some(BigDecimal("21.10")),
+    updateSequenceNumber       = 1
+  )
+
+  def getPurchaseDetails: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: returning purchase details")
+    request.body.asJson.flatMap(_.asOpt[GetPurchaseDetailsRequest]) match {
+      case None    => BadRequest("Invalid or missing request body")
+      case Some(_) => Ok(Json.toJson(purchaseDetailsResponse))
     }
   }
 
