@@ -147,8 +147,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
               case (Some(country), _, _) => baseApps.filter(_.refundingCountryCode == country)
               case _                     => baseApps
             }
-
-            Future.successful(Right(LatestApplicationResponse(filtered, filtered.size)))
+            Future.successful(Right(LatestApplicationResponse(filtered, 0)))
         }
       }
     }
@@ -203,19 +202,17 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
       } yield Ok(Json.obj("duplicateCount" -> n))
 
       fromInvoiceSim orElse fromPairDup orElse {
-        taxOpt.map { tax =>
-          tax match {
-            case "500" => InternalServerError("simulated 5xx")
-            case "400" => BadRequest("simulated 4xx")
-            case _ =>
-              val duplicateCount =
-                if (tax.endsWith("111")) 1
-                else if (tax.endsWith("999")) 2
-                else if (tax.endsWith("666")) 3
-                else 0
+        taxOpt.map {
+          case "500" => InternalServerError("simulated 5xx")
+          case "400" => BadRequest("simulated 4xx")
+          case tax =>
+            val duplicateCount =
+              if (tax.endsWith("111")) 1
+              else if (tax.endsWith("999")) 2
+              else if (tax.endsWith("666")) 3
+              else 0
 
-              Ok(Json.obj("duplicateCount" -> duplicateCount))
-          }
+            Ok(Json.obj("duplicateCount" -> duplicateCount))
         }
       }
     }
