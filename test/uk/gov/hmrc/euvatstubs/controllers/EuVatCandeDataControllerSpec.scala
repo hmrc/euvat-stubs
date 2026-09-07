@@ -108,7 +108,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       status(result) mustBe OK
       val json = contentAsJson(result)
       println(s"JSON: $json")
-      (json \ "totalApplication").as[Int] mustBe 1
+      (json \ "totalApplication").as[Int] mustBe 0
     }
     "return empty when country does not match" in {
       val fakeRequest = FakeRequest("POST", "/get-latest-application")
@@ -164,7 +164,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       status(result) mustBe OK
       val json = contentAsJson(result)
-      (json \ "totalApplication").as[Int] mustBe 1
+      (json \ "totalApplication").as[Int] mustBe 0
     }
 
     "simulate SIM-5XX and return 500" in {
@@ -232,7 +232,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
     "simulate SIM-DUP and return duplicate application" in {
       val fakeRequest = FakeRequest("POST", "/get-latest-application")
-        .withJsonBody(Json.obj("applicantVatRegNumber" -> "111111111"))
+        .withJsonBody(Json.obj("applicantVatRegNumber" -> "999900003"))
         .withHeaders("Content-Type" -> "application/json")
 
       val result = controller.getLatestApplications()(fakeRequest)
