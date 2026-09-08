@@ -362,6 +362,40 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
   }
 
+  "EuVatCandeDataController.getPurchaseDetails" should {
+
+    val validRequest =
+      FakeRequest("POST", "/get-purchase-details")
+        .withJsonBody(
+          Json.obj(
+            "applicationId" -> 123456,
+            "itemNumber"    -> 4
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+    "return the purchase details for a valid request" in {
+      val result = controller.getPurchaseDetails()(validRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      (json \ "goodsDescriptionCode").as[String] mustBe "1"
+      (json \ "supplierName").as[String] mustBe "Supplier Ltd"
+      (json \ "invoiceNumber").as[String] mustBe "INV-001"
+      (json \ "updateSequenceNumber").as[Int] mustBe 1
+    }
+
+    "return 400 when the request body is invalid" in {
+      val fakeRequest = FakeRequest("POST", "/get-purchase-details")
+        .withJsonBody(Json.obj("invalid" -> "body"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.getPurchaseDetails()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+  }
+
   "EuVatCandeDataController.getSupplierVrnCount" should {
 
     def requestWith(vatNumber: String, invoiceNumber: String = "DUP") =
