@@ -59,7 +59,9 @@ class EuVatDataCacheController @Inject() (cc: ControllerComponents) extends Back
     } else if (vrn.endsWith("222")) {
       knownFactsResponse(vrn, "2222", Some(LocalDateTime.of(2024, 1, 1, 0, 0, 0, 0)), Some(LocalDateTime.of(2024, 12, 31, 23, 59, 59, 999999999)))
     } else if (vrn.endsWith("002")) {
-      knownFactsResponse(vrn, "2222", Some(LocalDateTime.of(2024, 1, 1, 0, 0, 0, 0)), Some(LocalDateTime.of(2099, 12, 31, 23, 59, 59, 999999999)))
+      knownFactsResponse(vrn, "0002", Some(LocalDateTime.of(2024, 1, 1, 0, 0, 0, 0)), Some(LocalDateTime.of(2099, 12, 31, 23, 59, 59, 999999999)))
+    } else if (vrn.endsWith("004")) {
+      knownFactsResponse(vrn, "4444", Some(LocalDateTime.of(2026, 5, 1, 0, 0, 0, 0)), Some(LocalDateTime.of(2026, 7, 31, 23, 59, 59, 999999999)))
     } else if (vrn.endsWith("777")) {
       knownFactsResponse(vrn, "7777", Some(LocalDateTime.of(2020, 1, 1, 0, 0, 0, 0)), Some(LocalDateTime.of(2099, 12, 31, 23, 59, 59, 999999999)))
     } else {
