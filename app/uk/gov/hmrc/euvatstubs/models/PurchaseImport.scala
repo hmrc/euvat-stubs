@@ -18,10 +18,17 @@ package uk.gov.hmrc.euvatstubs.models
 
 import play.api.libs.json.{Json, OFormat}
 
-case class LatestApplicationResponse(
-  applications: List[LatestApplication],
-  totalApplication: Int
+case class PurchaseImport(
+  item_number: Int,
+  goodsDescriptionCategory: String,
+  goodsDescriptionSubCategory: Option[String],
+  currencyCode: Option[String],
+  taxableAmount: BigDecimal,
+  vatAmount: BigDecimal,
+  deductibleVatAmount: BigDecimal,
+  itemType: String
 )
-object LatestApplicationResponse {
-  implicit val format: OFormat[LatestApplicationResponse] = Json.format[LatestApplicationResponse]
+
+object PurchaseImport {
+  implicit val format: OFormat[PurchaseImport] = Json.format[PurchaseImport]
 }

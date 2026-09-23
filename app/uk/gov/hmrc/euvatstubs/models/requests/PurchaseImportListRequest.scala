@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.euvatstubs.models.responses
+package uk.gov.hmrc.euvatstubs.models.requests
 
 import play.api.libs.json.{Json, OFormat}
 
-case class SupplierVrnCountResponse(duplicateCount: Int)
+case class PurchaseImportListRequest(
+  applicationId: Long,
+  orderBy: Int = 1,
+  sortOrder: String = "ASC",
+  startAt: Int = 1,
+  maxNumber: Option[Int] = Some(1)
+)
 
-object SupplierVrnCountResponse {
-  implicit val format: OFormat[SupplierVrnCountResponse] = Json.format[SupplierVrnCountResponse]
+object PurchaseImportListRequest {
+  implicit val format: OFormat[PurchaseImportListRequest] = Json.format[PurchaseImportListRequest]
 }

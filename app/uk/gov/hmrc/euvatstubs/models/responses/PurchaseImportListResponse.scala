@@ -17,9 +17,13 @@
 package uk.gov.hmrc.euvatstubs.models.responses
 
 import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.euvatstubs.models.PurchaseImport
 
-case class SupplierVrnCountResponse(duplicateCount: Int)
+case class PurchaseImportListResponse(
+  purchaseImportList: List[PurchaseImport],
+  totalItems: Int
+)
 
-object SupplierVrnCountResponse {
-  implicit val format: OFormat[SupplierVrnCountResponse] = Json.format[SupplierVrnCountResponse]
+object PurchaseImportListResponse {
+  implicit val format: OFormat[PurchaseImportListResponse] = Json.format[PurchaseImportListResponse]
 }

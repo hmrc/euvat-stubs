@@ -20,8 +20,8 @@ import play.api.Logging
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
 import uk.gov.hmrc.euvatstubs.models.requests.*
-import uk.gov.hmrc.euvatstubs.models.responses.*
-import uk.gov.hmrc.euvatstubs.models.{LatestApplication, LatestApplicationResponse, SupplierVrnCountRequest, SupplierVrnCountResponse}
+import uk.gov.hmrc.euvatstubs.models.responses.{SupplierVrnCountResponse, *}
+import uk.gov.hmrc.euvatstubs.models.{LatestApplication, PurchaseImport, SupplierVrnCountRequest, responses}
 import uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -38,15 +38,11 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
   def addApplication(vrn: String): Action[AnyContent] = Action { implicit request =>
     logger.info(s"Stub: Creating refund application for vrn: $vrn")
 
-    val response = if (vrn.endsWith("111")) {
-      ApplicationResponse(111, "GB123111", 1)
-    } else if (vrn.endsWith("999")) {
-      ApplicationResponse(999, "GB123999", 1)
-    } else if (vrn.endsWith("666")) {
-      ApplicationResponse(666, "GB123666", 1)
-    } else {
-      ApplicationResponse(100, "GB123100", 3)
-    }
+    val response = if (vrn.endsWith("111")) { ApplicationResponse(111, "GB123111", 1) }
+    else if (vrn.endsWith("999")) { ApplicationResponse(999, "GB123999", 2) }
+    else if (vrn.endsWith("666")) { ApplicationResponse(666, "GB123666", 3) }
+    else { ApplicationResponse(100, "GB123100", 9) }
+
     Ok(Json.toJson(response))
   }
 
@@ -68,8 +64,8 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
 
   def getLatestApplications: Action[AnyContent] = Action.async { implicit request =>
     logger.info("Stub: returning latest Applications")
-
     val body = request.body.asJson
+
     def mapVrnToSim(v: String): String = v match {
       case "111111115"               => "SIM-5XX"
       case "999900003"               => "SIM-DUP" // Duplicate found, returns record with one or more total applications
@@ -80,7 +76,6 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     }
 
     val responseOpt = body.flatMap { json =>
-      // accept applicantVatRegNumber as string or numeric
       val applicantOpt: Option[String] = (json \ "applicantVatRegNumber")
         .asOpt[String]
         .orElse((json \ "applicantVatRegNumber").asOpt[Long].map(_.toString))
@@ -147,7 +142,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
               case (Some(country), _, _) => baseApps.filter(_.refundingCountryCode == country)
               case _                     => baseApps
             }
-            Future.successful(Right(LatestApplicationResponse(filtered, 0)))
+            Future.successful(Right(responses.LatestApplicationResponse(filtered, 0)))
         }
       }
     }
@@ -162,7 +157,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     }
   }
 
-  def addPurchase: Action[AnyContent] = Action { implicit request =>
+  def addPurchase(): Action[AnyContent] = Action { implicit request =>
     logger.info("Stub: adding purchase")
     request.body.asJson.flatMap(_.asOpt[AddPurchaseRequest]) match {
       case None    => BadRequest("Invalid or missing request body")
@@ -200,11 +195,9 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
 
   def getSupplierTaxIdentifierCount: Action[AnyContent] = Action { implicit request =>
     logger.info("Stub: getSupplierTaxIdentifierCount called")
-
     val body = request.body.asJson
 
     val resultOpt: Option[Result] = body.flatMap { json =>
-      // accept invoiceNumber and taxIdentifier values
       val invoiceOpt: Option[String] = (json \ "invoiceNumber").asOpt[String]
       val taxOpt: Option[String] = (json \ "taxIdentifier").asOpt[String]
 
@@ -252,13 +245,9 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     logger.info("Stub: returning supplier VRN count")
 
     request.body.asJson.flatMap(_.validate[SupplierVrnCountRequest].asOpt) match {
-      case None =>
-        BadRequest("Invalid or missing request body")
-
-      case Some(req) if req.vatNumber.endsWith("500") =>
-        InternalServerError("Simulated database connectivity failure")
-
-      case Some(req) =>
+      case None                                       => BadRequest("Invalid or missing request body")
+      case Some(req) if req.vatNumber.endsWith("500") => InternalServerError("Simulated database connectivity failure")
+      case Some(req)                                  =>
         // Duplicate only when the VRN suffix triggers AND the invoice number is the "known duplicate" value.
         // Changing either the VRN (to a non-111/222 suffix) or the invoice (away from DUP) clears the warning.
         val count =
@@ -276,9 +265,8 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     }
   }
 
-  def updatePurchaseDetails: Action[AnyContent] = Action { implicit request =>
+  def updatePurchaseDetails(): Action[AnyContent] = Action { implicit request =>
     logger.info("Stub: updatePurchaseDetails called")
-
     val bodyOpt = request.body.asJson
 
     bodyOpt match {
@@ -288,12 +276,10 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         (json \ "invoiceNumber").asOpt[String] match {
           case Some("INV-UP-500") => InternalServerError("simulated 5xx")
           case Some("INV-UP-400") => BadRequest("simulated 4xx")
-          case _                  =>
-            // Try to read as UpdatePurchaseDetailsRequest first (preferred form)
+          case _ =>
             json.asOpt[UpdatePurchaseDetailsRequest] match {
               case Some(req) => Ok(Json.obj("updateSequenceNumber" -> req.updateSequenceNumber))
-              case None      =>
-                // accept alternative key names as specified by the consumer
+              case None =>
                 val applicationIdOpt: Option[Long] = (json \ "applicationId").asOpt[Long]
                 val goodsDescriptionCategoryOpt: Option[String] = (json \ "goodsDescriptionCategory").asOpt[String]
                 val goodsDescriptionTextOpt: Option[String] = (json \ "goodsDescriptionText").asOpt[String]
@@ -330,7 +316,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
 
                 (applicationIdOpt, goodsDescriptionCategoryOpt, updateSequenceNumberOpt) match {
                   case (Some(applicationId), Some(goodsDescriptionCategory), Some(updateSeq)) =>
-                    val req = uk.gov.hmrc.euvatstubs.models.requests.UpdatePurchaseDetailsRequest(
+                    val req = UpdatePurchaseDetailsRequest(
                       applicationId               = applicationId,
                       itemNumber                  = itemNumberOpt.getOrElse(0),
                       goodsDescriptionCategory    = goodsDescriptionCategory,
@@ -358,5 +344,36 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
                 }
             }
         }
+    }
+  }
+
+  private val purchaseImport: PurchaseImport = PurchaseImport(
+    item_number                 = 1,
+    itemType                    = "P",
+    goodsDescriptionCategory    = "1",
+    goodsDescriptionSubCategory = Some("1.2"),
+    currencyCode                = Some("DE"),
+    taxableAmount               = 333,
+    vatAmount                   = 222,
+    deductibleVatAmount         = 111
+  )
+
+  def getPurchaseImportList: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: returning purchase and import list")
+    val bodyOpt = request.body.asJson
+
+    bodyOpt.flatMap(_.validate[PurchaseImportListRequest].asOpt).fold(BadRequest("Invalid or missing request body")) { request =>
+      request.applicationId match {
+        case 0 => BadRequest(s"No items found for the request applicationId: ${request.applicationId}")
+        case _ =>
+          val response: List[PurchaseImport] =
+            request.applicationId match {
+              case 111 => List(purchaseImport)
+              case 222 => List(purchaseImport, purchaseImport.copy(itemType = "I"))
+              case _   => List(purchaseImport, purchaseImport.copy(itemType = "I"), purchaseImport.copy(itemType = "P", deductibleVatAmount = 53))
+            }
+
+          Ok(Json.toJson(PurchaseImportListResponse(totalItems = response.size, purchaseImportList = response)))
+      }
     }
   }

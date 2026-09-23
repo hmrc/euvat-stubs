@@ -62,7 +62,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val json: JsValue = contentAsJson(result)
       (json \ "applicationId").as[Int] mustBe 999
       (json \ "applicationNumber").as[String] mustBe "GB123999"
-      (json \ "updateSeqNumber").as[Int] mustBe 1
+      (json \ "updateSeqNumber").as[Int] mustBe 2
     }
 
     "save the refund application for vrn ending with 666" in {
@@ -73,7 +73,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val json: JsValue = contentAsJson(result)
       (json \ "applicationId").as[Int] mustBe 666
       (json \ "applicationNumber").as[String] mustBe "GB123666"
-      (json \ "updateSeqNumber").as[Int] mustBe 1
+      (json \ "updateSeqNumber").as[Int] mustBe 3
     }
 
     "save the refund application for any other vrn" in {
@@ -84,7 +84,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val json: JsValue = contentAsJson(result)
       (json \ "applicationId").as[Int] mustBe 100
       (json \ "applicationNumber").as[String] mustBe "GB123100"
-      (json \ "updateSeqNumber").as[Int] mustBe 3
+      (json \ "updateSeqNumber").as[Int] mustBe 9
     }
   }
 
@@ -107,7 +107,6 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       status(result) mustBe OK
       val json = contentAsJson(result)
-      println(s"JSON: $json")
       (json \ "totalApplication").as[Int] mustBe 0
     }
     "return empty when country does not match" in {
@@ -397,7 +396,6 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
   }
 
   "EuVatCandeDataController.getSupplierVrnCount" should {
-
     def requestWith(vatNumber: String, invoiceNumber: String = "DUP") =
       FakeRequest("POST", "/get-supplier-vrn-count")
         .withJsonBody(
@@ -633,6 +631,41 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       val result = controller.updatePurchaseDetails()(fakeRequest)
 
+      status(result) mustBe BAD_REQUEST
+    }
+  }
+
+  "EuVatCandeDataController.getPurchaseImportList" should {
+    def fakeRequest(appId: Long) = FakeRequest("GET", "/get-purchase-import-list")
+      .withJsonBody(Json.obj("applicationId" -> appId))
+      .withHeaders("Content-Type" -> "application/json")
+
+    "return purchase import list with 1 item" in {
+      val result = controller.getPurchaseImportList()(fakeRequest(111))
+      status(result) mustBe OK
+
+      val json = contentAsJson(result)
+      (json \ "totalItems").as[Int] mustBe 1
+    }
+
+    "return purchase import list with 3 items" in {
+      val result = controller.getPurchaseImportList()(fakeRequest(23))
+      status(result) mustBe OK
+
+      val json = contentAsJson(result)
+      (json \ "totalItems").as[Int] mustBe 3
+    }
+
+    "return BadRequest for invalid appId" in {
+      val result = controller.getPurchaseImportList()(fakeRequest(0))
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return BadRequest for invalid request" in {
+      def noRequest() = FakeRequest("GET", "/get-purchase-import-list")
+        .withJsonBody(Json.obj())
+        .withHeaders("Content-Type" -> "application/json")
+      val result = controller.getPurchaseImportList()(noRequest())
       status(result) mustBe BAD_REQUEST
     }
   }
