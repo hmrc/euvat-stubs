@@ -19,7 +19,6 @@ package uk.gov.hmrc.euvatstubs.models.responses
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.Json
-import uk.gov.hmrc.euvatstubs.models.SupplierVrnCountResponse
 
 class SupplierVrnCountResponseSpec extends AnyWordSpec with Matchers {
 
