@@ -21,7 +21,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
 import uk.gov.hmrc.euvatstubs.models.requests.*
 import uk.gov.hmrc.euvatstubs.models.responses.*
-import uk.gov.hmrc.euvatstubs.models.{LatestApplication, LatestApplicationResponse, SupplierVrnCountRequest, SupplierVrnCountResponse}
+import uk.gov.hmrc.euvatstubs.models.{LatestApplication, LatestApplicationResponse}
 import uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -164,6 +164,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
 
   def addPurchase: Action[AnyContent] = Action { implicit request =>
     logger.info("Stub: adding purchase")
+
     request.body.asJson.flatMap(_.asOpt[AddPurchaseRequest]) match {
       case None    => BadRequest("Invalid or missing request body")
       case Some(_) => Ok(Json.toJson(AddPurchaseResponse(itemNumber = 4, updateSequenceNumber = 1)))
@@ -192,6 +193,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
 
   def getPurchaseDetails: Action[AnyContent] = Action { implicit request =>
     logger.info("Stub: returning purchase details")
+
     request.body.asJson.flatMap(_.asOpt[GetPurchaseDetailsRequest]) match {
       case None    => BadRequest("Invalid or missing request body")
       case Some(_) => Ok(Json.toJson(purchaseDetailsResponse))
@@ -199,80 +201,40 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
   }
 
   def getSupplierTaxIdentifierCount: Action[AnyContent] = Action { implicit request =>
-    logger.info("Stub: getSupplierTaxIdentifierCount called")
+    logger.info("Stub: returning SupplierTaxIdentifierCount")
 
-    val body = request.body.asJson
-
-    val resultOpt: Option[Result] = body.flatMap { json =>
-      // accept invoiceNumber and taxIdentifier values
-      val invoiceOpt: Option[String] = (json \ "invoiceNumber").asOpt[String]
-      val taxOpt: Option[String] = (json \ "taxIdentifier").asOpt[String]
-
-      // invoice-only simulated errors
-      val fromInvoiceSim: Option[Result] = invoiceOpt.flatMap {
-        case "INV-500" => Some(InternalServerError("simulated 5xx"))
-        case "INV-400" => Some(BadRequest("simulated 4xx"))
-        case _         => None
-      }
-
-      // explicit (taxIdentifier, invoiceNumber) -> duplicateCount mapping
-      val pairDupMap: Map[(String, String), Int] = Map(
-        ("TID-0", "INV-0")  -> 0,
-        ("TID-1", "INV-1")  -> 1,
-        ("TID-2", "INV-2")  -> 2,
-        ("TID123", "INV-1") -> 0
-      )
-
-      val fromPairDup: Option[Result] = for {
-        t <- taxOpt
-        i <- invoiceOpt
-        n <- pairDupMap.get((t, i))
-      } yield Ok(Json.obj("duplicateCount" -> n))
-
-      fromInvoiceSim orElse fromPairDup orElse {
-        taxOpt.map {
-          case "500" => InternalServerError("simulated 5xx")
-          case "400" => BadRequest("simulated 4xx")
-          case tax =>
-            val duplicateCount =
-              if (tax.endsWith("111")) 1
-              else if (tax.endsWith("999")) 2
-              else if (tax.endsWith("666")) 3
-              else 0
-
-            Ok(Json.obj("duplicateCount" -> duplicateCount))
+    request.body.asJson.flatMap(_.validate[SupplierTaxIdentifierCountRequest].asOpt) match {
+      case None                                           => BadRequest("Invalid or missing request body")
+      case Some(req) if req.taxIdentifier.endsWith("500") => InternalServerError("Simulated database connectivity failure")
+      case Some(req) =>
+        val count = (req.invoiceNumber, req.taxIdentifier) match {
+          case ("INV-1", "TID-1") => 1 // triggers duplicate warning
+          case ("INV-1", "TID-2") => 2 // triggers duplicate warning
+          case _                  => 0 // no warning triggers
         }
-      }
-    }
 
-    resultOpt.getOrElse(BadRequest("taxIdentifier or invoiceNumber is missing or invalid"))
+        logger.info(s"Stub getSupplierTaxIdentifierCount: taxIdentifier=${req.taxIdentifier}, invoiceNumber=${req.invoiceNumber}, count=$count")
+        Ok(Json.toJson(SupplierTaxIdentifierCountResponse(count)))
+    }
   }
 
   def getSupplierVrnCount: Action[AnyContent] = Action { implicit request =>
     logger.info("Stub: returning supplier VRN count")
 
     request.body.asJson.flatMap(_.validate[SupplierVrnCountRequest].asOpt) match {
-      case None =>
-        BadRequest("Invalid or missing request body")
-
-      case Some(req) if req.vatNumber.endsWith("500") =>
-        InternalServerError("Simulated database connectivity failure")
-
-      case Some(req) =>
+      case None                                       => BadRequest("Invalid or missing request body")
+      case Some(req) if req.vatNumber.endsWith("500") => InternalServerError("Simulated database connectivity failure")
+      case Some(req)                                  =>
         // Duplicate only when the VRN suffix triggers AND the invoice number is the "known duplicate" value.
         // Changing either the VRN (to a non-111/222 suffix) or the invoice (away from DUP) clears the warning.
-        val count =
-          if (req.invoiceNumber == "DUP") {
-            req.vatNumber.takeRight(3) match {
-              case "111" => 1
-              case "222" => 2
-              case _     => 0
-            }
-          } else 0
+        val count = (req.invoiceNumber, req.vatNumber.takeRight(3)) match {
+          case ("DUP", "111") => 1
+          case ("DUP", "222") => 2
+          case _              => 0
+        }
 
         logger.info(s"Stub getSupplierVrnCount: vatNumber=${req.vatNumber}, invoiceNumber=${req.invoiceNumber}, count=$count")
         Ok(Json.toJson(SupplierVrnCountResponse(count)))
-
     }
   }
 

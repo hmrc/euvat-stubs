@@ -259,13 +259,13 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
   }
 
   "EuVatCandeDataController.getSupplierTaxIdentifierCount" should {
-    "return duplicateCount 1 for taxIdentifier ending 111" in {
+    "return duplicateCount 1 for taxIdentifier ending TID-1" in {
       val fakeRequest = FakeRequest("POST", "/get-supplier-taxIdentifier-count")
         .withJsonBody(
           Json.obj(
             "applicationId" -> 1,
             "itemNumber"    -> 1,
-            "taxIdentifier" -> "ABC111",
+            "taxIdentifier" -> "TID-1",
             "invoiceNumber" -> "INV-1"
           )
         )
@@ -277,14 +277,14 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       (json \ "duplicateCount").as[Int] mustBe 1
     }
 
-    "return duplicateCount 2 for taxIdentifier ending 999" in {
+    "return duplicateCount 2 for taxIdentifier ending TID-2" in {
       val fakeRequest = FakeRequest("POST", "/get-supplier-taxIdentifier-count")
         .withJsonBody(
           Json.obj(
             "applicationId" -> 1,
             "itemNumber"    -> 1,
-            "taxIdentifier" -> "XYZ999",
-            "invoiceNumber" -> "INV-2"
+            "taxIdentifier" -> "TID-2",
+            "invoiceNumber" -> "INV-1"
           )
         )
 
