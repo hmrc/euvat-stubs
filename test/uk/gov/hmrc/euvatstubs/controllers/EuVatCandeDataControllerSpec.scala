@@ -103,8 +103,6 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       val result = controller.getLatestApplications()(fakeRequest)
 
-      println(s"Response body: ${contentAsString(result)}")
-
       status(result) mustBe OK
       val json = contentAsJson(result)
       (json \ "totalApplication").as[Int] mustBe 0
@@ -238,7 +236,6 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       status(result) mustBe OK
       val json = contentAsJson(result)
-      println(s"SIM-DUP response: ${contentAsString(result)}")
       (json \ "totalApplication").as[Int] mustBe 1
       val apps = (json \ "applications").as[JsArray].value
       (apps.head \ "applicationNumber").as[String] mustBe "GB-DUP-0001"
@@ -258,13 +255,13 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
   }
 
   "EuVatCandeDataController.getSupplierTaxIdentifierCount" should {
-    "return duplicateCount 1 for taxIdentifier ending 111" in {
+    "return duplicateCount 1 for taxIdentifier ending TID-1" in {
       val fakeRequest = FakeRequest("POST", "/get-supplier-taxIdentifier-count")
         .withJsonBody(
           Json.obj(
             "applicationId" -> 1,
             "itemNumber"    -> 1,
-            "taxIdentifier" -> "ABC111",
+            "taxIdentifier" -> "TID-1",
             "invoiceNumber" -> "INV-1"
           )
         )
@@ -276,14 +273,14 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       (json \ "duplicateCount").as[Int] mustBe 1
     }
 
-    "return duplicateCount 2 for taxIdentifier ending 999" in {
+    "return duplicateCount 2 for taxIdentifier ending TID-2" in {
       val fakeRequest = FakeRequest("POST", "/get-supplier-taxIdentifier-count")
         .withJsonBody(
           Json.obj(
             "applicationId" -> 1,
             "itemNumber"    -> 1,
-            "taxIdentifier" -> "XYZ999",
-            "invoiceNumber" -> "INV-2"
+            "taxIdentifier" -> "TID-2",
+            "invoiceNumber" -> "INV-1"
           )
         )
 
@@ -641,7 +638,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       .withHeaders("Content-Type" -> "application/json")
 
     "return purchase import list with 1 item" in {
-      val result = controller.getPurchaseImportList()(fakeRequest(111))
+      val result = controller.getPurchaseImportList()(fakeRequest(999))
       status(result) mustBe OK
 
       val json = contentAsJson(result)

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.euvatstubs.models
+package uk.gov.hmrc.euvatstubs.models.requests
 
 import play.api.libs.json.{Json, OFormat}
 

@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.euvatstubs.models
+package uk.gov.hmrc.euvatstubs.models.requests
 
 import play.api.libs.json.{Json, OFormat}
 
-case class PurchaseImport(
+case class SupplierTaxIdentifierCountRequest(
+  applicationId: Long,
   itemNumber: Int,
-  goodsDescriptionCategory: String,
-  goodsDescriptionSubCategory: Option[String],
-  currencyCode: Option[String],
-  taxableAmount: BigDecimal,
-  vatAmount: BigDecimal,
-  deductibleVatAmount: BigDecimal,
-  itemType: String
+  taxIdentifier: String,
+  invoiceNumber: String
 )
 
-object PurchaseImport {
-  implicit val format: OFormat[PurchaseImport] = Json.format[PurchaseImport]
+object SupplierTaxIdentifierCountRequest {
+  implicit val format: OFormat[SupplierTaxIdentifierCountRequest] = Json.format[SupplierTaxIdentifierCountRequest]
 }
