@@ -65,7 +65,7 @@ class EuVatDataCacheController @Inject() (cc: ControllerComponents) extends Back
     } else if (vrn.endsWith("777")) {
       knownFactsResponse(vrn, "7777", Some(LocalDateTime.of(2020, 1, 1, 0, 0, 0, 0)), Some(LocalDateTime.of(2099, 12, 31, 23, 59, 59, 999999999)))
     } else {
-      knownFactsResponse(vrn, "7020", Some(LocalDateTime.of(2025, 1, 1, 0, 0, 0, 0)), Some(LocalDateTime.of(2025, 12, 31, 23, 59, 59, 999999999)))
+      knownFactsResponse(vrn, "7020", Some(LocalDateTime.of(2025, 1, 1, 0, 0, 0, 0)))
     }
 
     Ok(Json.toJson(response))
