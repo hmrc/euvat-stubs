@@ -23,6 +23,7 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.json.*
 import play.api.test.*
 import play.api.test.Helpers.*
+import uk.gov.hmrc.euvatstubs.models.responses.*
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -359,6 +360,50 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val result = controller.addPurchase()(fakeRequest)
 
       status(result) mustBe BAD_REQUEST
+    }
+  }
+
+  "EuVatCandeDataController.addImport" should {
+
+    val validImportRequest =
+      FakeRequest("POST", "/add-import")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"            -> 123456,
+            "itemNumber"               -> 7,
+            "goodsDescriptionCategory" -> "1",
+            "updateSequenceNumber"     -> 5
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+    "return itemNumber and updateSequenceNumber for a valid request" in {
+      val result = controller.addImport()(validImportRequest)
+
+      status(result) mustBe OK
+      val resp = contentAsJson(result).as[AddPurchaseResponse]
+      resp.itemNumber mustBe 7
+      resp.updateSequenceNumber mustBe 5
+    }
+
+    "return 400 when the request body is invalid" in {
+      val fakeRequest = FakeRequest("POST", "/add-import")
+        .withJsonBody(Json.obj("invalid" -> "body"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.addImport()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "simulate 5xx and return 500 when applicationId ends with 500" in {
+      val fakeRequest = FakeRequest("POST", "/add-import")
+        .withJsonBody(Json.obj("applicationId" -> 500, "itemNumber" -> 1, "goodsDescriptionCategory" -> "1", "updateSequenceNumber" -> 1))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.addImport()(fakeRequest)
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
     }
   }
 
