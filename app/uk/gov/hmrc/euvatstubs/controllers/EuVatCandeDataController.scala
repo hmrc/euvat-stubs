@@ -51,12 +51,12 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
       LatestApplication(
         applicationId        = 404,
         refundingCountryCode = "LV",
-        periodStartDate      = LocalDateTime.of(2025, 2, 1, 0, 0),
-        periodEndDate        = LocalDateTime.of(2025, 5, 31, 23, 59),
+        periodStartDate      = LocalDateTime.of(2026, 2, 1, 0, 0),
+        periodEndDate        = LocalDateTime.of(2026, 5, 31, 23, 59),
         applicationNumber    = "GB0000000000000404",
         applicationStatus    = Some("D"),
         submissionStatus     = Some("S"),
-        applicationVersion   = LocalDateTime.of(2025, 4, 22, 0, 0, 0, 0)
+        applicationVersion   = LocalDateTime.of(2026, 4, 22, 0, 0, 0, 0)
       )
     ),
     totalApplication = 1
@@ -112,8 +112,8 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
             val app = LatestApplication(
               applicationId        = 1L,
               refundingCountryCode = (json \ "refundingCountry").asOpt[String].getOrElse("LV"),
-              periodStartDate      = LocalDateTime.of(2025, 1, 1, 0, 0),
-              periodEndDate        = LocalDateTime.of(2025, 12, 31, 23, 59),
+              periodStartDate      = LocalDateTime.of(2026, 1, 1, 0, 0),
+              periodEndDate        = LocalDateTime.of(2026, 12, 31, 23, 59),
               applicationNumber    = "GB-DUP-0001",
               applicationStatus    = Some("D"),
               submissionStatus     = None,
@@ -177,7 +177,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     supplierAddressLine3       = None,
     supplierVatNumber          = Some("LV40003567907"),
     supplierTaxIdentifier      = None,
-    invoiceDate                = Some(LocalDateTime.of(2025, 3, 15, 0, 0)),
+    invoiceDate                = Some(LocalDateTime.of(2026, 3, 15, 0, 0)),
     invoiceNumber              = Some("INV-001"),
     currencyCode               = Some("EUR"),
     taxableAmount              = Some(BigDecimal("100.50")),
