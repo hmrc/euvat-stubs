@@ -322,3 +322,21 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         }
     }
   }
+
+  def deleteApplication: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: deleteApplication called")
+
+    val bodyOpt = request.body.asJson
+
+    bodyOpt match {
+      case None => BadRequest("Invalid or missing request body")
+      case Some(json) =>
+        json.asOpt[DeleteApplicationRequest] match {
+          case None      => BadRequest("Invalid or missing request body")
+          case Some(req) =>
+            // Simulate a backend/database failure when applicationId ends with 500
+            if (req.applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
+            else Ok
+        }
+    }
+  }
