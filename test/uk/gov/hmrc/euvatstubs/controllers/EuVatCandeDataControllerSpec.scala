@@ -701,4 +701,65 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
   }
 
+  "EuVatCandeDataController.updateApplicationDetails" should {
+
+    def requestWith(json: JsObject) =
+      FakeRequest("PUT", "/rds-cande-proxy/update-application-details")
+        .withJsonBody(json)
+        .withHeaders("Content-Type" -> "application/json")
+
+    val mandatoryJson = Json.obj(
+      "applicationId"         -> 133,
+      "refundingCountry"      -> "LV",
+      "periodStartDate"       -> "2011-06-01T00:00:00",
+      "periodEndDate"         -> "2011-10-31T23:59:59",
+      "applicantEmailAddress" -> "test@hotmail.com",
+      "updateSequenceNumber"  -> 30
+    )
+
+    "return updateSequenceNumber + 1 when applicationLanguage is absent" in {
+      val result = controller.updateApplicationDetails()(requestWith(mandatoryJson))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 31
+    }
+
+    "return updateSequenceNumber + 2 when applicationLanguage is present" in {
+      val result = controller.updateApplicationDetails()(requestWith(mandatoryJson + ("applicationLanguage" -> JsString("en"))))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 32
+    }
+
+    "simulate error500@test.com and return 500" in {
+      val result = controller.updateApplicationDetails()(
+        requestWith(mandatoryJson + ("applicantEmailAddress" -> JsString("error500@test.com")))
+      )
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+
+    "simulate error400@test.com and return 400" in {
+      val result = controller.updateApplicationDetails()(
+        requestWith(mandatoryJson + ("applicantEmailAddress" -> JsString("error400@test.com")))
+      )
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return BadRequest when a mandatory field is missing" in {
+      val result = controller.updateApplicationDetails()(requestWith(mandatoryJson - "refundingCountry"))
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return BadRequest when no JSON body provided" in {
+      val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-application-details")
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.updateApplicationDetails()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+  }
 }

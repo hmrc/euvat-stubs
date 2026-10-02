@@ -376,3 +376,17 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         }
     }
   }
+
+  def updateApplicationDetails: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: updateApplicationDetails called")
+
+    request.body.asJson.flatMap(_.asOpt[UpdateApplicationDetailsRequest]) match {
+      case None                                                          => BadRequest("Invalid or missing request body")
+      case Some(req) if req.applicantEmailAddress == "error500@test.com" => InternalServerError("simulated 5xx")
+      case Some(req) if req.applicantEmailAddress == "error400@test.com" => BadRequest("simulated 4xx")
+      case Some(req) =>
+        val newSeq = req.updateSequenceNumber + (if (req.applicationLanguage.isDefined) 2 else 1)
+        logger.info(s"Stub updateApplicationDetails: applicationId=${req.applicationId}, newSeq=$newSeq")
+        Ok(Json.toJson(UpdateApplicationDetailsResponse(newSeq)))
+    }
+  }
