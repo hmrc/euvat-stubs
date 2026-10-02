@@ -171,6 +171,17 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     }
   }
 
+  def addImport: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: adding import (rds-cande-proxy)")
+
+    request.body.asJson.flatMap(_.asOpt[AddImportRequest]) match {
+      case None => BadRequest("Invalid or missing request body")
+      case Some(req) =>
+        if (req.applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
+        else Ok(Json.toJson(AddPurchaseResponse(itemNumber = req.itemNumber, updateSequenceNumber = req.updateSequenceNumber)))
+    }
+  }
+
   private val purchaseDetailsResponse: GetPurchaseDetailsResponse = GetPurchaseDetailsResponse(
     goodsDescriptionCode       = "1",
     goodsDescriptionSubCode    = Some("1.1"),
