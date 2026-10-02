@@ -633,7 +633,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
   }
 
   "EuVatCandeDataController.getPurchaseImportList" should {
-    def fakeRequest(appId: Long) = FakeRequest("GET", "/get-purchase-import-list")
+    def fakeRequest(appId: Long) = FakeRequest("GET", "/get-purchases-and-imports")
       .withJsonBody(Json.obj("applicationId" -> appId))
       .withHeaders("Content-Type" -> "application/json")
 
@@ -659,7 +659,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
 
     "return BadRequest for invalid request" in {
-      def noRequest() = FakeRequest("GET", "/get-purchase-import-list")
+      def noRequest() = FakeRequest("GET", "/get-purchases-and-imports")
         .withJsonBody(Json.obj())
         .withHeaders("Content-Type" -> "application/json")
       val result = controller.getPurchaseImportList()(noRequest())

@@ -320,10 +320,10 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     itemType                    = "P",
     goodsDescriptionCategory    = "1",
     goodsDescriptionSubCategory = Some("1.2"),
-    currencyCode                = Some("DE"),
+    currencyCode                = "DE",
     taxableAmount               = 333,
     vatAmount                   = 222,
-    deductibleVatAmount         = 111
+    deductibleVatAmount         = 111.11
   )
 
   def getPurchaseImportList: Action[AnyContent] = Action { implicit request =>
@@ -340,7 +340,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
               case _   => List(purchaseImport, purchaseImport.copy(itemType = "I"), purchaseImport.copy(itemType = "P", deductibleVatAmount = 53))
             }
 
-          Ok(Json.toJson(PurchaseImportListResponse(totalItems = response.size, purchaseImportList = response)))
+          Ok(Json.toJson(PurchaseImportListResponse(totalItems = response.size, purchaseImportList = response, totalVatClaims = BigDecimal(345.67))))
       }
     }
   }

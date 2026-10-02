@@ -21,7 +21,8 @@ import uk.gov.hmrc.euvatstubs.models.PurchaseImport
 
 case class PurchaseImportListResponse(
   purchaseImportList: List[PurchaseImport],
-  totalItems: Int
+  totalItems: Int,
+  totalVatClaims: BigDecimal
 )
 
 object PurchaseImportListResponse {
