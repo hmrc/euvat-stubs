@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.euvatstubs.models
+package uk.gov.hmrc.euvatstubs.models.responses
 
 import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.euvatstubs.models.PurchaseImport
 
-case class LatestApplicationResponse(
-  applications: List[LatestApplication],
-  totalApplication: Int
+case class PurchaseImportListResponse(
+  purchaseImportList: List[PurchaseImport],
+  totalItems: Int,
+  totalVatClaims: BigDecimal
 )
-object LatestApplicationResponse {
-  implicit val format: OFormat[LatestApplicationResponse] = Json.format[LatestApplicationResponse]
+
+object PurchaseImportListResponse {
+  implicit val format: OFormat[PurchaseImportListResponse] = Json.format[PurchaseImportListResponse]
 }
