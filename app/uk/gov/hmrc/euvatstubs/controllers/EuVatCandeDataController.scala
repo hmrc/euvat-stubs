@@ -337,10 +337,14 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
             request.applicationId match {
               case 999 => List(purchaseImport)
               case 111 => List(purchaseImport, purchaseImport.copy(itemType = "I", deductibleVatAmount = 234.56))
-              case _   => List(purchaseImport, purchaseImport.copy(itemType = "I"), purchaseImport.copy(itemType = "P", deductibleVatAmount = 53))
+              case _ =>
+                List(purchaseImport,
+                     purchaseImport.copy(itemType = "I", deductibleVatAmount = 234.56),
+                     purchaseImport.copy(itemType = "P", deductibleVatAmount = 111.11)
+                    )
             }
 
-          Ok(Json.toJson(PurchaseImportListResponse(totalItems = response.size, purchaseImportList = response, totalVatClaims = BigDecimal(345.67))))
+          Ok(Json.toJson(PurchaseImportListResponse(totalItems = response.size, purchaseImportList = response, totalVatClaims = BigDecimal(456.78))))
       }
     }
   }

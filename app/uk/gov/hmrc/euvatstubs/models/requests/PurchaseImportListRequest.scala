@@ -20,10 +20,10 @@ import play.api.libs.json.{Json, OFormat}
 
 case class PurchaseImportListRequest(
   applicationId: Long,
-  orderBy: Int = 1,
+  orderBy: Int = 0,
   sortOrder: String = "ASC",
-  startAt: Int = 1,
-  maxNumber: Option[Int] = Some(1)
+  startAt: Int = 0,
+  maxNumber: Option[Int] = Some(20)
 )
 
 object PurchaseImportListRequest {
