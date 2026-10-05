@@ -41,7 +41,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     val response = if (vrn.endsWith("111")) { ApplicationResponse(111, "GB123111", 1) }
     else if (vrn.endsWith("666")) { ApplicationResponse(666, "GB123666", 3) }
     else if (vrn.endsWith("999")) { ApplicationResponse(999, "GB123999", 2) }
-    else if (vrn.endsWith("444")) { ApplicationResponse(444, "GB123444", 4) }
+    else if (vrn.endsWith("880")) { ApplicationResponse(402, "GB123406", 4) }
     else { ApplicationResponse(100, "GB123100", 6) }
 
     Ok(Json.toJson(response))
@@ -337,7 +337,8 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
           val response: List[PurchaseImport] =
             request.applicationId match {
               case 999 => List(purchaseImport)
-              case 444 =>
+              case 111 => List(purchaseImport, purchaseImport.copy(itemType = "I", itemNumber = 2, deductibleVatAmount = 234.56))
+              case 402 =>
                 List(
                   purchaseImport.copy(itemType = "I", itemNumber = 4, deductibleVatAmount = 0),
                   purchaseImport,
@@ -346,7 +347,6 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
                   purchaseImport.copy(itemType   = "I", itemNumber = 6, deductibleVatAmount = 0),
                   purchaseImport.copy(itemNumber = 3)
                 )
-              case 111 => List(purchaseImport, purchaseImport.copy(itemType = "I", itemNumber = 2, deductibleVatAmount = 234.56))
               case _ =>
                 List(
                   purchaseImport,
