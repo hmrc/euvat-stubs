@@ -41,7 +41,8 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     val response = if (vrn.endsWith("111")) { ApplicationResponse(111, "GB123111", 1) }
     else if (vrn.endsWith("666")) { ApplicationResponse(666, "GB123666", 3) }
     else if (vrn.endsWith("999")) { ApplicationResponse(999, "GB123999", 2) }
-    else { ApplicationResponse(100, "GB123100", 9) }
+    else if (vrn.endsWith("444")) { ApplicationResponse(444, "GB123444", 4) }
+    else { ApplicationResponse(100, "GB123100", 6) }
 
     Ok(Json.toJson(response))
   }
@@ -336,12 +337,22 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
           val response: List[PurchaseImport] =
             request.applicationId match {
               case 999 => List(purchaseImport)
-              case 111 => List(purchaseImport, purchaseImport.copy(itemType = "I", deductibleVatAmount = 234.56))
+              case 444 =>
+                List(
+                  purchaseImport.copy(itemType = "I", itemNumber = 4, deductibleVatAmount = 0),
+                  purchaseImport,
+                  purchaseImport.copy(itemType   = "P", itemNumber = 5, deductibleVatAmount = 0),
+                  purchaseImport.copy(itemNumber = 2),
+                  purchaseImport.copy(itemType   = "I", itemNumber = 6, deductibleVatAmount = 0),
+                  purchaseImport.copy(itemNumber = 3)
+                )
+              case 111 => List(purchaseImport, purchaseImport.copy(itemType = "I", itemNumber = 2, deductibleVatAmount = 234.56))
               case _ =>
-                List(purchaseImport,
-                     purchaseImport.copy(itemType = "I", deductibleVatAmount = 234.56),
-                     purchaseImport.copy(itemType = "P", deductibleVatAmount = 111.11)
-                    )
+                List(
+                  purchaseImport,
+                  purchaseImport.copy(itemType = "I", itemNumber = 2, deductibleVatAmount = 234.56),
+                  purchaseImport.copy(itemType = "P", itemNumber = 3, deductibleVatAmount = 111.11)
+                )
             }
 
           Ok(Json.toJson(PurchaseImportListResponse(totalItems = response.size, purchaseImportList = response, totalVatClaims = BigDecimal(456.78))))

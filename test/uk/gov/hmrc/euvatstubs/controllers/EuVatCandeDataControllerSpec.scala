@@ -84,7 +84,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val json: JsValue = contentAsJson(result)
       (json \ "applicationId").as[Int] mustBe 100
       (json \ "applicationNumber").as[String] mustBe "GB123100"
-      (json \ "updateSeqNumber").as[Int] mustBe 9
+      (json \ "updateSeqNumber").as[Int] mustBe 6
     }
   }
 
