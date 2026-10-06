@@ -662,7 +662,41 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       def noRequest() = FakeRequest("GET", "/get-purchases-and-imports")
         .withJsonBody(Json.obj())
         .withHeaders("Content-Type" -> "application/json")
+
       val result = controller.getPurchaseImportList()(noRequest())
+      status(result) mustBe BAD_REQUEST
+    }
+  }
+
+  "EuVatCandeDataController.deleteApplication" should {
+    "return 200 for a valid delete request" in {
+      val fakeRequest = FakeRequest("DELETE", "/rds-cande-proxy/delete-application")
+        .withJsonBody(Json.obj("applicationId" -> 123456L, "updateSequenceNumber" -> 1))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.deleteApplication()(fakeRequest)
+
+      status(result) mustBe OK
+      contentAsString(result) mustBe ""
+    }
+
+    "return 500 when backend failure is simulated" in {
+      val fakeRequest = FakeRequest("DELETE", "/rds-cande-proxy/delete-application")
+        .withJsonBody(Json.obj("applicationId" -> 500, "updateSequenceNumber" -> 1))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.deleteApplication()(fakeRequest)
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+
+    "return 400 when the request body is invalid" in {
+      val fakeRequest = FakeRequest("DELETE", "/rds-cande-proxy/delete-application")
+        .withJsonBody(Json.obj("invalid" -> "body"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.deleteApplication()(fakeRequest)
+
       status(result) mustBe BAD_REQUEST
     }
   }

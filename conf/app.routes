@@ -9,3 +9,4 @@ POST       /get-supplier-taxIdentifier-count    uk.gov.hmrc.euvatstubs.controlle
 POST       /get-supplier-vrn-count              uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getSupplierVrnCount
 PUT        /update-purchase-details             uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.updatePurchaseDetails()
 POST       /get-purchases-and-imports           uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getPurchaseImportList
+DELETE     /delete-application                  uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.deleteApplication

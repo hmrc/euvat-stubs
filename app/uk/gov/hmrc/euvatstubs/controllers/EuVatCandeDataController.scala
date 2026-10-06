@@ -21,7 +21,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
 import uk.gov.hmrc.euvatstubs.models.requests.*
 import uk.gov.hmrc.euvatstubs.models.responses.*
-import uk.gov.hmrc.euvatstubs.models.{LatestApplication, PurchaseImport, responses}
+import uk.gov.hmrc.euvatstubs.models.{LatestApplication, PurchaseImport}
 import uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -143,7 +143,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
               case (Some(country), _, _) => baseApps.filter(_.refundingCountryCode == country)
               case _                     => baseApps
             }
-            Future.successful(Right(responses.LatestApplicationResponse(filtered, 0)))
+            Future.successful(Right(LatestApplicationResponse(filtered, 0)))
         }
       }
     }
@@ -191,8 +191,8 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     logger.info("Stub: returning purchase details")
 
     request.body.asJson.flatMap(_.asOpt[GetPurchaseDetailsRequest]) match {
-      case None    => BadRequest("Invalid or missing request body")
       case Some(_) => Ok(Json.toJson(purchaseDetailsResponse))
+      case None    => BadRequest("Invalid or missing request body")
     }
   }
 
@@ -357,5 +357,22 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
 
           Ok(Json.toJson(PurchaseImportListResponse(totalItems = response.size, purchaseImportList = response, totalVatClaims = BigDecimal(456.78))))
       }
+    }
+  }
+
+  def deleteApplication: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: deleteApplication called")
+    val bodyOpt = request.body.asJson
+
+    bodyOpt match {
+      case None => BadRequest("Invalid or missing request body")
+      case Some(json) =>
+        json.asOpt[DeleteApplicationRequest] match {
+          case None      => BadRequest("Invalid or missing request body")
+          case Some(req) =>
+            // Simulate a backend/database failure when applicationId ends with 500
+            if (req.applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
+            else Ok
+        }
     }
   }
