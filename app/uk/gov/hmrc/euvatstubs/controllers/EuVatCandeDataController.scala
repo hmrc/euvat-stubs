@@ -336,22 +336,22 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         case _ =>
           val response: List[PurchaseImport] =
             request.applicationId match {
-              case 999 => List(purchaseImport)
-              case 111 => List(purchaseImport, purchaseImport.copy(itemType = "I", itemNumber = 2, deductibleVatAmount = 234.56))
+              case 111 => List(purchaseImport)
+              case 999 => List(purchaseImport.copy(itemType = "I", itemNumber = 2, deductibleVatAmount = 0))
               case 402 =>
                 List(
-                  purchaseImport.copy(itemType = "I", itemNumber = 4, deductibleVatAmount = 0),
+                  purchaseImport.copy(goodsDescriptionCategory = "3", itemType = "I", itemNumber = 4, deductibleVatAmount = 0),
                   purchaseImport,
-                  purchaseImport.copy(itemType   = "P", itemNumber = 5, deductibleVatAmount = 0),
-                  purchaseImport.copy(itemNumber = 2),
-                  purchaseImport.copy(itemType   = "I", itemNumber = 6, deductibleVatAmount = 0),
-                  purchaseImport.copy(itemNumber = 3)
+                  purchaseImport.copy(goodsDescriptionCategory = "7", itemType   = "P", itemNumber        = 5, deductibleVatAmount = 0),
+                  purchaseImport.copy(goodsDescriptionCategory = "9", itemNumber = 2, deductibleVatAmount = 123.45),
+                  purchaseImport.copy(goodsDescriptionCategory = "10", itemType  = "I", itemNumber        = 6, deductibleVatAmount = 0),
+                  purchaseImport.copy(goodsDescriptionCategory = "9", itemNumber = 3, deductibleVatAmount = 999)
                 )
               case _ =>
                 List(
                   purchaseImport,
-                  purchaseImport.copy(itemType = "I", itemNumber = 2, deductibleVatAmount = 234.56),
-                  purchaseImport.copy(itemType = "P", itemNumber = 3, deductibleVatAmount = 111.11)
+                  purchaseImport.copy(goodsDescriptionCategory = "9", itemType = "I", itemNumber = 2, deductibleVatAmount = 234.56),
+                  purchaseImport.copy(goodsDescriptionCategory = "7", itemType = "P", itemNumber = 3, deductibleVatAmount = 111.11)
                 )
             }
 
