@@ -22,7 +22,7 @@ import java.time.LocalDateTime
 
 case class UpdateApplicationDetailsRequest(
   applicationId: Long,
-  applicationLanguage: Option[String],
+  applicationLanguage: String,
   refundingCountry: String,
   periodStartDate: LocalDateTime,
   periodEndDate: LocalDateTime,

@@ -710,6 +710,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
     val mandatoryJson = Json.obj(
       "applicationId"         -> 133,
+      "applicationLanguage"   -> "en",
       "refundingCountry"      -> "LV",
       "periodStartDate"       -> "2011-06-01T00:00:00",
       "periodEndDate"         -> "2011-10-31T23:59:59",
@@ -717,15 +718,8 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       "updateSequenceNumber"  -> 30
     )
 
-    "return updateSequenceNumber + 1 when applicationLanguage is absent" in {
+    "return updateSequenceNumber + 2" in {
       val result = controller.updateApplicationDetails()(requestWith(mandatoryJson))
-
-      status(result) mustBe OK
-      (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 31
-    }
-
-    "return updateSequenceNumber + 2 when applicationLanguage is present" in {
-      val result = controller.updateApplicationDetails()(requestWith(mandatoryJson + ("applicationLanguage" -> JsString("en"))))
 
       status(result) mustBe OK
       (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 32
@@ -743,6 +737,12 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val result = controller.updateApplicationDetails()(
         requestWith(mandatoryJson + ("applicantEmailAddress" -> JsString("error400@test.com")))
       )
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return BadRequest when applicationLanguage is missing" in {
+      val result = controller.updateApplicationDetails()(requestWith(mandatoryJson - "applicationLanguage"))
 
       status(result) mustBe BAD_REQUEST
     }

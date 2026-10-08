@@ -26,7 +26,7 @@ class UpdateApplicationDetailsRequestSpec extends AnyWordSpec with Matchers {
 
   private val fullRequest = UpdateApplicationDetailsRequest(
     applicationId              = 133,
-    applicationLanguage        = Some("en"),
+    applicationLanguage        = "en",
     refundingCountry           = "LV",
     periodStartDate            = LocalDateTime.of(2011, 6, 1, 0, 0, 0),
     periodEndDate              = LocalDateTime.of(2011, 10, 31, 23, 59, 59),
@@ -72,6 +72,7 @@ class UpdateApplicationDetailsRequestSpec extends AnyWordSpec with Matchers {
 
   private val mandatoryOnlyJson: JsObject = Json.obj(
     "applicationId"         -> 133,
+    "applicationLanguage"   -> "en",
     "refundingCountry"      -> "LV",
     "periodStartDate"       -> "2011-06-01T00:00:00",
     "periodEndDate"         -> "2011-10-31T23:59:59",
@@ -91,7 +92,6 @@ class UpdateApplicationDetailsRequestSpec extends AnyWordSpec with Matchers {
 
     "deserialize when only mandatory fields are present" in {
       mandatoryOnlyJson.as[UpdateApplicationDetailsRequest] shouldBe fullRequest.copy(
-        applicationLanguage        = None,
         applicantPhoneNumber       = None,
         representativeCountry      = None,
         representativeEmailAddress = None,
@@ -108,11 +108,18 @@ class UpdateApplicationDetailsRequestSpec extends AnyWordSpec with Matchers {
       )
     }
 
-    Seq("applicationId", "refundingCountry", "periodStartDate", "periodEndDate", "applicantEmailAddress", "updateSequenceNumber")
-      .foreach { field =>
-        s"fail to deserialize when $field is missing" in {
-          (mandatoryOnlyJson - field).validate[UpdateApplicationDetailsRequest].isError shouldBe true
-        }
+    Seq(
+      "applicationId",
+      "applicationLanguage",
+      "refundingCountry",
+      "periodStartDate",
+      "periodEndDate",
+      "applicantEmailAddress",
+      "updateSequenceNumber"
+    ).foreach { field =>
+      s"fail to deserialize when $field is missing" in {
+        (mandatoryOnlyJson - field).validate[UpdateApplicationDetailsRequest].isError shouldBe true
       }
+    }
   }
 }

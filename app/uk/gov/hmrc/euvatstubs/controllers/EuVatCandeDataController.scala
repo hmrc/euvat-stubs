@@ -384,8 +384,9 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
       case None                                                          => BadRequest("Invalid or missing request body")
       case Some(req) if req.applicantEmailAddress == "error500@test.com" => InternalServerError("simulated 5xx")
       case Some(req) if req.applicantEmailAddress == "error400@test.com" => BadRequest("simulated 4xx")
-      case Some(req) =>
-        val newSeq = req.updateSequenceNumber + (if (req.applicationLanguage.isDefined) 2 else 1)
+      case Some(req)                                                     =>
+        // mimic the proxy: language SP then details SP, each bumps seq by 1
+        val newSeq = req.updateSequenceNumber + 2
         logger.info(s"Stub updateApplicationDetails: applicationId=${req.applicationId}, newSeq=$newSeq")
         Ok(Json.toJson(UpdateApplicationDetailsResponse(newSeq)))
     }
