@@ -3,9 +3,10 @@
 GET        /traders/get-known-facts/:vrn        uk.gov.hmrc.euvatstubs.controllers.EuVatDataCacheController.getTraderByVrn(vrn: String)
 POST       /create-application/:vrn             uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.addApplication(vrn: String)
 POST       /get-latest-application              uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getLatestApplications
-POST       /add-purchase                        uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.addPurchase
+POST       /add-purchase                        uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.addPurchase()
 POST       /get-purchase-details                uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getPurchaseDetails
 POST       /get-supplier-taxIdentifier-count    uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getSupplierTaxIdentifierCount
 POST       /get-supplier-vrn-count              uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getSupplierVrnCount
-PUT        /update-purchase-details             uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.updatePurchaseDetails
+PUT        /update-purchase-details             uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.updatePurchaseDetails()
+POST       /get-purchases-and-imports           uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getPurchaseImportList
 DELETE     /delete-application                  uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.deleteApplication
