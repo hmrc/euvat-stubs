@@ -376,3 +376,17 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         }
     }
   }
+
+  def deletePurchase: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: deletePurchase called")
+
+    request.body.asJson.flatMap(_.asOpt[DeletePurchaseRequest]) match {
+      case None                               => BadRequest("Invalid or missing request body")
+      case Some(req) if req.itemNumber == 500 => InternalServerError("Simulated database connectivity failure")
+      case Some(req)                          =>
+        // mimic the proxy: deletePurchaseDetails bumps seq by 1
+        val newSeq = req.updateSequenceNumber + 1
+        logger.info(s"Stub deletePurchase: applicationId=${req.applicationId}, itemNumber=${req.itemNumber}, newSeq=$newSeq")
+        Ok(Json.toJson(DeletePurchaseResponse(newSeq)))
+    }
+  }
