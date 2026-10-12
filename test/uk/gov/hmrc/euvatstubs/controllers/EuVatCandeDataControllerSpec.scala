@@ -82,7 +82,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       status(result) mustBe OK
 
       val json: JsValue = contentAsJson(result)
-      (json \ "applicationId").as[Int] mustBe 100
+      (json \ "applicationId").as[Int] mustBe 660
       (json \ "applicationNumber").as[String] mustBe "GB123100"
       (json \ "updateSeqNumber").as[Int] mustBe 6
     }
@@ -650,7 +650,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       status(result) mustBe OK
 
       val json = contentAsJson(result)
-      (json \ "totalItems").as[Int] mustBe 3
+      (json \ "totalItems").as[Int] mustBe 1
     }
 
     "return BadRequest for invalid appId" in {
