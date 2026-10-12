@@ -254,6 +254,31 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
   }
 
+  "EuVatCandeDataController.getImportDetails" should {
+    "return import details for valid request" in {
+      val fakeRequest = FakeRequest("GET", "/rds-cande-proxy/get-import-details/404/4")
+
+      val result = controller.getImportDetails(404, 4)(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      (json \ "applicationId").as[Int] mustBe 404
+      (json \ "itemNumber").as[Int] mustBe 4
+      (json \ "supplierName").asOpt[String] mustBe Some("Finnish International")
+      (json \ "issuingDate").as[String] mustBe "2026-05-14T00:00:00"
+      (json \ "periodStartDate").as[String] mustBe "2026-01-01T00:00:00"
+      (json \ "supplierCountryCode").asOpt[String] mustBe Some("GB")
+    }
+
+    "simulate 5xx and return 500 for applicationId ending with 500" in {
+      val fakeRequest = FakeRequest("GET", "/rds-cande-proxy/get-import-details/500/4")
+
+      val result = controller.getImportDetails(500, 4)(fakeRequest)
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+  }
+
   "EuVatCandeDataController.getSupplierTaxIdentifierCount" should {
     "return duplicateCount 1 for taxIdentifier ending TID-1" in {
       val fakeRequest = FakeRequest("POST", "/get-supplier-taxIdentifier-count")
