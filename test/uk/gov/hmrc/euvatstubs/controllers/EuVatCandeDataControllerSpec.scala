@@ -701,4 +701,46 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
   }
 
+  "EuVatCandeDataController.deletePurchase" should {
+
+    def requestWith(json: JsObject) =
+      FakeRequest("DELETE", "/rds-cande-proxy/delete-purchase")
+        .withJsonBody(json)
+        .withHeaders("Content-Type" -> "application/json")
+
+    val validJson = Json.obj(
+      "applicationId"        -> 123456L,
+      "itemNumber"           -> 4,
+      "updateSequenceNumber" -> 7
+    )
+
+    "return updateSequenceNumber + 1 for a valid delete request" in {
+      val result = controller.deletePurchase()(requestWith(validJson))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 8
+    }
+
+    "return 500 when backend failure is simulated with itemNumber 500" in {
+      val result = controller.deletePurchase()(requestWith(validJson + ("itemNumber" -> JsNumber(500))))
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+
+    "return 400 when a mandatory field is missing" in {
+      val result = controller.deletePurchase()(requestWith(validJson - "itemNumber"))
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return 400 when no JSON body provided" in {
+      val fakeRequest = FakeRequest("DELETE", "/rds-cande-proxy/delete-purchase")
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.deletePurchase()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+  }
+
 }

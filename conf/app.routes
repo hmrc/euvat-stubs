@@ -10,3 +10,4 @@ POST       /get-supplier-vrn-count              uk.gov.hmrc.euvatstubs.controlle
 PUT        /update-purchase-details             uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.updatePurchaseDetails()
 POST       /get-purchases-and-imports           uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getPurchaseImportList
 DELETE     /delete-application                  uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.deleteApplication
+DELETE     /delete-purchase                     uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.deletePurchase
