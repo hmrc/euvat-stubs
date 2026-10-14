@@ -6,6 +6,7 @@ POST       /get-latest-application                           uk.gov.hmrc.euvatst
 POST       /add-purchase                                     uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.addPurchase()
 POST       /add-import                                       uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.addImport
 POST       /get-purchase-details                             uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getPurchaseDetails
+GET        /get-purchase-details/:applicationId/:itemNumber  uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getPurchaseDetailsByPath(applicationId: Long, itemNumber: Int)
 POST       /get-supplier-taxIdentifier-count                 uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getSupplierTaxIdentifierCount
 POST       /get-supplier-vrn-count                           uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getSupplierVrnCount
 PUT        /update-purchase-details                          uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.updatePurchaseDetails()
