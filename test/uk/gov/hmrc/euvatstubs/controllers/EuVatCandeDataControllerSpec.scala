@@ -23,7 +23,11 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.json.*
 import play.api.test.*
 import play.api.test.Helpers.*
+import uk.gov.hmrc.euvatstubs.models.PurchaseImport
+import uk.gov.hmrc.euvatstubs.models.requests.UpdatePurchaseDetailsRequest
+import uk.gov.hmrc.euvatstubs.repositories.{PurchaseImportRepository, StoredPurchaseDetails}
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -35,10 +39,125 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
   // Use the test stub repository (see test/.../repositories/VrnStateRepository.scala)
   implicit val ec: scala.concurrent.ExecutionContext = global
 
-  val controller: EuVatCandeDataController = new EuVatCandeDataController(
-    stubControllerComponents(),
-    new uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository()
-  )
+  private class InMemoryPurchaseImportRepository extends PurchaseImportRepository {
+    private val data = mutable.Map.empty[Long, Vector[StoredPurchaseDetails]]
+
+    override def savePurchaseDetails(applicationId: Long, purchaseDetails: UpdatePurchaseDetailsRequest): Future[UpdatePurchaseDetailsRequest] =
+      Future.successful {
+        val existing = data.getOrElse(applicationId, Vector.empty)
+        val assignedItemNumber =
+          if (purchaseDetails.itemNumber > 0 && existing.exists(_.purchaseDetails.itemNumber == purchaseDetails.itemNumber))
+            purchaseDetails.itemNumber
+          else if (purchaseDetails.itemNumber > 0) purchaseDetails.itemNumber
+          else existing.map(_.purchaseDetails.itemNumber).foldLeft(0)(Math.max) + 1
+
+        val savedDetails = purchaseDetails.copy(applicationId = applicationId, itemNumber = assignedItemNumber)
+        val itemType = existing.find(_.purchaseDetails.itemNumber == assignedItemNumber).map(_.purchaseImport.itemType).getOrElse("P")
+        val stored = StoredPurchaseDetails(
+          applicationId,
+          savedDetails,
+          PurchaseImport(
+            itemNumber                  = savedDetails.itemNumber,
+            itemType                    = itemType,
+            goodsDescriptionCategory    = savedDetails.goodsDescriptionCategory,
+            goodsDescriptionSubCategory = savedDetails.goodsDescriptionSubCategory,
+            currencyCode                = savedDetails.currencyCode.getOrElse(""),
+            taxableAmount               = savedDetails.taxableAmount.getOrElse(BigDecimal(0)),
+            vatAmount                   = savedDetails.vatAmount.getOrElse(BigDecimal(0)),
+            deductibleVatAmount         = savedDetails.deductibleVatAmount.getOrElse(BigDecimal(0))
+          )
+        )
+
+        data.update(applicationId, existing.filterNot(_.purchaseDetails.itemNumber == assignedItemNumber) :+ stored)
+        savedDetails
+      }
+
+    override def findPurchaseDetails(applicationId: Long, itemNumber: Int): Future[Option[UpdatePurchaseDetailsRequest]] =
+      Future.successful(data.getOrElse(applicationId, Vector.empty).find(_.purchaseDetails.itemNumber == itemNumber).map(_.purchaseDetails))
+
+    override def findPurchaseImports(applicationId: Long): Future[List[PurchaseImport]] =
+      Future.successful(data.getOrElse(applicationId, Vector.empty).map(_.purchaseImport).toList)
+
+    override def seedDefaultPurchaseDetails(applicationId: Long): Future[Unit] =
+      Future.successful {
+        val existing = data.getOrElse(applicationId, Vector.empty)
+        val existingItemNumbers = existing.map(_.purchaseDetails.itemNumber).toSet
+        val seeds = defaultEntries(applicationId).filterNot(entry => existingItemNumbers.contains(entry.purchaseDetails.itemNumber))
+        if (seeds.nonEmpty) data.update(applicationId, existing ++ seeds)
+      }
+
+    private def defaultEntries(applicationId: Long): Vector[StoredPurchaseDetails] = applicationId match {
+      case 111 => Vector(storedDefault(applicationId, 1, "P"))
+      case 999 => Vector(storedDefault(applicationId, 2, "I"))
+      case 402 =>
+        Vector(
+          storedDefault(applicationId, 4, "I", goodsDescriptionCategory = "3", deductibleVatAmount = 0),
+          storedDefault(applicationId, 1, "P"),
+          storedDefault(applicationId, 5, "P", goodsDescriptionCategory = "7", deductibleVatAmount  = 0),
+          storedDefault(applicationId, 2, "P", goodsDescriptionCategory = "9", deductibleVatAmount  = 123.45),
+          storedDefault(applicationId, 6, "I", goodsDescriptionCategory = "10", deductibleVatAmount = 0),
+          storedDefault(applicationId, 3, "P", goodsDescriptionCategory = "9", deductibleVatAmount  = 999)
+        )
+      case _ => Vector(storedDefault(applicationId, 3, "P", goodsDescriptionCategory = "7", deductibleVatAmount = 111.11))
+    }
+
+    private def storedDefault(
+      applicationId: Long,
+      itemNumber: Int,
+      itemType: String,
+      goodsDescriptionCategory: String = "1",
+      goodsDescriptionSubCategory: Option[String] = Some("1.2"),
+      currencyCode: String = "DE",
+      taxableAmount: BigDecimal = 333,
+      vatAmount: BigDecimal = 222,
+      deductibleVatAmount: BigDecimal = 111.11
+    ): StoredPurchaseDetails = {
+      val purchaseDetails = UpdatePurchaseDetailsRequest(
+        applicationId               = applicationId,
+        itemNumber                  = itemNumber,
+        goodsDescriptionCategory    = goodsDescriptionCategory,
+        goodsDescriptionSubCategory = goodsDescriptionSubCategory,
+        goodsDescriptionText        = None,
+        simplifiedInvoiceIndicator  = None,
+        supplierName                = None,
+        supplierAddress1            = None,
+        supplierAddress2            = None,
+        supplierAddress3            = None,
+        supplierVatRegNumber        = None,
+        supplierTaxIdentifier       = None,
+        invoiceDate                 = None,
+        invoiceNumber               = None,
+        currencyCode                = Some(currencyCode),
+        taxableAmount               = Some(taxableAmount),
+        vatAmount                   = Some(vatAmount),
+        deductibleVatAmount         = Some(deductibleVatAmount),
+        updateSequenceNumber        = 1
+      )
+
+      StoredPurchaseDetails(
+        applicationId,
+        purchaseDetails,
+        PurchaseImport(
+          itemNumber                  = itemNumber,
+          itemType                    = itemType,
+          goodsDescriptionCategory    = goodsDescriptionCategory,
+          goodsDescriptionSubCategory = goodsDescriptionSubCategory,
+          currencyCode                = currencyCode,
+          taxableAmount               = taxableAmount,
+          vatAmount                   = vatAmount,
+          deductibleVatAmount         = deductibleVatAmount
+        )
+      )
+    }
+  }
+
+  private def newController(
+    vrnRepository: uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository = new uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository(),
+    purchaseImportRepository: PurchaseImportRepository = new InMemoryPurchaseImportRepository
+  ): EuVatCandeDataController =
+    new EuVatCandeDataController(stubControllerComponents(), vrnRepository, purchaseImportRepository)
+
+  def controller: EuVatCandeDataController = newController()
 
   "EuVatCandeDataController.addApplication" should {
     val fakeRequest = FakeRequest("POST", s"/create-application")
@@ -212,7 +331,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val repo = new uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository() {
         override def incrementAndGet(vrn: String): Future[Port] = scala.concurrent.Future.successful(3)
       }
-      val ctrl = new EuVatCandeDataController(stubControllerComponents(), repo)
+      val ctrl = newController(vrnRepository = repo)
 
       val fakeRequest = FakeRequest("POST", "/get-latest-application")
         .withJsonBody(Json.obj("applicantVatRegNumber" -> "555555555"))
@@ -365,20 +484,50 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
         .withJsonBody(
           Json.obj(
             "applicationId" -> 123456,
-            "itemNumber"    -> 4
+            "itemNumber"    -> 2
           )
         )
         .withHeaders("Content-Type" -> "application/json")
 
     "return the purchase details for a valid request" in {
-      val result = controller.getPurchaseDetails()(validRequest)
+      val ctrl = newController()
+
+      val firstSave = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"            -> 123456,
+            "goodsDescriptionCategory" -> "10",
+            "goodsDescriptionText"     -> "first item",
+            "updateSequenceNumber"     -> 1
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      val secondSave = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"            -> 123456,
+            "goodsDescriptionCategory" -> "11",
+            "goodsDescriptionText"     -> "second item",
+            "supplierName"             -> "Supplier Ltd",
+            "invoiceNumber"            -> "INV-002",
+            "updateSequenceNumber"     -> 2
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      status(ctrl.updatePurchaseDetails()(firstSave)) mustBe OK
+      status(ctrl.updatePurchaseDetails()(secondSave)) mustBe OK
+
+      val result = ctrl.getPurchaseDetails()(validRequest)
 
       status(result) mustBe OK
       val json = contentAsJson(result)
-      (json \ "goodsDescriptionCode").as[String] mustBe "1"
+      (json \ "goodsDescriptionCode").as[String] mustBe "11"
+      (json \ "goodsDescriptionText").as[String] mustBe "second item"
       (json \ "supplierName").as[String] mustBe "Supplier Ltd"
-      (json \ "invoiceNumber").as[String] mustBe "INV-001"
-      (json \ "updateSequenceNumber").as[Int] mustBe 1
+      (json \ "invoiceNumber").as[String] mustBe "INV-002"
+      (json \ "updateSequenceNumber").as[Int] mustBe 2
     }
 
     "return 400 when the request body is invalid" in {
@@ -554,6 +703,112 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       status(result) mustBe OK
       (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 3
+    }
+
+    "replace an existing purchase when the same item number is saved again" in {
+      val ctrl = newController()
+
+      val firstSave = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"            -> 234567,
+            "itemNumber"               -> 7,
+            "goodsDescriptionCategory" -> "20",
+            "goodsDescriptionText"     -> "original item",
+            "updateSequenceNumber"     -> 1
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      val secondSave = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"            -> 234567,
+            "itemNumber"               -> 7,
+            "goodsDescriptionCategory" -> "21",
+            "goodsDescriptionText"     -> "updated item",
+            "invoiceNumber"            -> "INV-777",
+            "updateSequenceNumber"     -> 2
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      status(ctrl.updatePurchaseDetails()(firstSave)) mustBe OK
+      status(ctrl.updatePurchaseDetails()(secondSave)) mustBe OK
+
+      val listRequest = FakeRequest("POST", "/get-purchase-import-list")
+        .withJsonBody(Json.obj("applicationId" -> 234567))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val listResult = ctrl.getPurchaseImportList()(listRequest)
+
+      status(listResult) mustBe OK
+      val listJson = contentAsJson(listResult)
+      (listJson \ "totalItems").as[Int] mustBe 2
+
+      val detailRequest = FakeRequest("POST", "/get-purchase-details")
+        .withJsonBody(Json.obj("applicationId" -> 234567, "itemNumber" -> 7))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val detailResult = ctrl.getPurchaseDetails()(detailRequest)
+
+      status(detailResult) mustBe OK
+      val detailJson = contentAsJson(detailResult)
+      (detailJson \ "goodsDescriptionCode").as[String] mustBe "21"
+      (detailJson \ "goodsDescriptionText").as[String] mustBe "updated item"
+      (detailJson \ "invoiceNumber").as[String] mustBe "INV-777"
+    }
+
+    "persist the incoming purchase details for later purchase-import listing" in {
+      val purchaseImportRepository = new InMemoryPurchaseImportRepository
+      val ctrl = newController(purchaseImportRepository = purchaseImportRepository)
+
+      val updateRequestOne = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"            -> 123456,
+            "goodsDescriptionCategory" -> "10",
+            "goodsDescriptionText"     -> "office stationery and consumables",
+            "currencyCode"             -> "EUR",
+            "taxableAmount"            -> 1000,
+            "vatAmount"                -> 99,
+            "deductibleVatAmount"      -> 40,
+            "updateSequenceNumber"     -> 7
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      val updateRequestTwo = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"            -> 123456,
+            "goodsDescriptionCategory" -> "11",
+            "goodsDescriptionText"     -> "other item",
+            "currencyCode"             -> "EUR",
+            "taxableAmount"            -> 250,
+            "vatAmount"                -> 50,
+            "deductibleVatAmount"      -> 20,
+            "updateSequenceNumber"     -> 8
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+      status(ctrl.updatePurchaseDetails()(updateRequestOne)) mustBe OK
+      status(ctrl.updatePurchaseDetails()(updateRequestTwo)) mustBe OK
+
+      val listRequest = FakeRequest("GET", "/get-purchases-and-imports")
+        .withJsonBody(Json.obj("applicationId" -> 123456))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val listResult = ctrl.getPurchaseImportList()(listRequest)
+      status(listResult) mustBe OK
+
+      val json = contentAsJson(listResult)
+      (json \ "totalItems").as[Int] mustBe 3
+      val imports = (json \ "purchaseImportList").as[JsArray].value
+      imports.exists(item => (item \ "itemNumber").as[Int] == 1) mustBe true
+      imports.exists(item => (item \ "itemNumber").as[Int] == 2) mustBe true
+      imports.exists(item => (item \ "goodsDescriptionCategory").as[String] == "10") mustBe true
     }
 
     "return BadRequest when no JSON body provided" in {
