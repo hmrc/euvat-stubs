@@ -831,4 +831,44 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       status(result) mustBe BAD_REQUEST
     }
   }
+
+  "EuVatCandeDataController.deleteImport" should {
+    val fakeRequestJson = (path: String) =>
+      FakeRequest("DELETE", path)
+        .withJsonBody(
+          Json.obj(
+            "applicationId"        -> 123456L,
+            "itemNumber"           -> 1,
+            "updateSequenceNumber" -> 5
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+    "return updateSequenceNumber for a valid delete import request" in {
+      val result = controller.deleteImport()(fakeRequestJson("/delete-import"))
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      (json \ "updateSequenceNumber").as[Int] mustBe 5
+    }
+
+    "return BadRequest when the request body is invalid" in {
+      val fakeRequest = FakeRequest("DELETE", "/delete-import")
+        .withJsonBody(Json.obj("invalid" -> "body"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.deleteImport()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return 400 when no JSON body provided" in {
+      val fakeRequest = FakeRequest("DELETE", "/delete-import")
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.deleteImport()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+  }
 }
