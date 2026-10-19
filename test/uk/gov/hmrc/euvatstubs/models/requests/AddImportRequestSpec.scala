@@ -29,7 +29,6 @@ class AddImportRequestSpec extends AnyWordSpec with Matchers {
     "serialize and deserialize a fully populated request" in {
       val req = AddImportRequest(
         applicationId               = 123456L,
-        itemNumber                  = 4,
         issuingDate                 = Some(LocalDateTime.of(2025, 3, 15, 0, 0)),
         supplierName                = Some("Supplier Ltd"),
         supplierAddressLine1        = Some("1 High Street"),

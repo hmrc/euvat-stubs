@@ -174,7 +174,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
       case None => BadRequest("Invalid or missing request body")
       case Some(req) =>
         if (req.applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
-        else Ok(Json.toJson(AddPurchaseResponse(itemNumber = req.itemNumber, updateSequenceNumber = req.updateSequenceNumber)))
+        else Ok(Json.toJson(AddPurchaseResponse(itemNumber = 4, updateSequenceNumber = req.updateSequenceNumber)))
     }
   }
 

@@ -366,7 +366,6 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
         .withJsonBody(
           Json.obj(
             "applicationId"            -> 123456,
-            "itemNumber"               -> 7,
             "goodsDescriptionCategory" -> "1",
             "updateSequenceNumber"     -> 5
           )
@@ -378,7 +377,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       status(result) mustBe OK
       val resp = contentAsJson(result).as[AddPurchaseResponse]
-      resp.itemNumber mustBe 7
+      resp.itemNumber mustBe 4
       resp.updateSequenceNumber mustBe 5
     }
 
