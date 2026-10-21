@@ -26,9 +26,8 @@ import play.api.test.Helpers.*
 import uk.gov.hmrc.euvatstubs.models.responses.*
 import uk.gov.hmrc.euvatstubs.models.PurchaseImport
 import uk.gov.hmrc.euvatstubs.models.requests.UpdatePurchaseDetailsRequest
-import uk.gov.hmrc.euvatstubs.repositories.{PurchaseImportRepository, StoredPurchaseDetails}
+import uk.gov.hmrc.euvatstubs.repositories.{InMemoryPurchaseImportRepository, PurchaseImportRepository, StoredPurchaseDetails}
 
-import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -1143,6 +1142,28 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       val result = controller.getPurchaseImportList()(noRequest())
       status(result) mustBe BAD_REQUEST
+    }
+
+    "delete the requested seeded import and retain the other items" in {
+      val ctrl = newController()
+      val initialList = ctrl.getPurchaseImportList()(fakeRequest(402))
+      status(initialList) mustBe OK
+      (contentAsJson(initialList) \ "totalItems").as[Int] mustBe 6
+
+      val deleteRequest = FakeRequest("DELETE", "/delete-import")
+        .withJsonBody(Json.obj("applicationId" -> 402, "itemNumber" -> 4, "updateSequenceNumber" -> 8))
+        .withHeaders("Content-Type" -> "application/json")
+      val deleteResult = ctrl.deleteImport()(deleteRequest)
+
+      status(deleteResult) mustBe OK
+      (contentAsJson(deleteResult) \ "updateSequenceNumber").as[Int] mustBe 8
+
+      val listAfterDelete = ctrl.getPurchaseImportList()(fakeRequest(402))
+      val json = contentAsJson(listAfterDelete)
+      (json \ "totalItems").as[Int] mustBe 5
+      val items = (json \ "purchaseImportList").as[JsArray].value
+      items.exists(item => (item \ "itemNumber").as[Int] == 4) mustBe false
+      items.exists(item => (item \ "itemNumber").as[Int] == 6) mustBe true
     }
   }
 

@@ -34,6 +34,7 @@ trait PurchaseImportRepository {
   def findPurchaseImports(sessionId: String, applicationId: Long): Future[List[PurchaseImport]]
   def seedDefaultPurchaseDetails(sessionId: String, applicationId: Long): Future[Unit]
   def deletePurchaseDetails(sessionId: String, applicationId: Long): Future[Unit]
+  def deleteImport(applicationId: Long, itemNumber: Int): Future[Unit]
 }
 
 case class StoredPurchaseDetails(
@@ -99,6 +100,12 @@ object StoredPurchaseDetails {
   }
 }
 
+private case class SeededPurchaseImportApplication(applicationId: Long)
+
+private object SeededPurchaseImportApplication {
+  implicit val format: Format[SeededPurchaseImportApplication] = Json.format[SeededPurchaseImportApplication]
+}
+
 @Singleton
 class MongoPurchaseImportRepository @Inject() (
   mongoComponent: MongoComponent
@@ -118,6 +125,7 @@ class MongoPurchaseImportRepository @Inject() (
     val key = sessionKey(sessionId)
     val applicationFilter = and(equal("sessionKey", key), equal("applicationId", applicationId))
     collection.find(applicationFilter).toFuture().flatMap { existing =>
+
       val assignedItemNumber =
         if (purchaseDetails.itemNumber > 0 && existing.exists(_.purchaseDetails.itemNumber == purchaseDetails.itemNumber)) purchaseDetails.itemNumber
         else if (purchaseDetails.itemNumber > 0) purchaseDetails.itemNumber
@@ -158,7 +166,10 @@ class MongoPurchaseImportRepository @Inject() (
         .filterNot(entry => existingItemNumbers.contains(entry.purchaseDetails.itemNumber))
         .map(_.copy(sessionKey = key))
 
-      Future.sequence(seeds.map(collection.insertOne(_).toFuture())).map(_ => ())
+          Future.sequence(seeds.map(collection.insertOne(_).toFuture())).flatMap { _ =>
+            seededApplications.collection.insertOne(SeededPurchaseImportApplication(applicationId)).toFuture().map(_ => ())
+          }
+        }
     }
   }
 
@@ -166,6 +177,12 @@ class MongoPurchaseImportRepository @Inject() (
     java.util.Base64.getUrlEncoder.withoutPadding.encodeToString(
       MessageDigest.getInstance("SHA-256").digest(sessionId.getBytes(StandardCharsets.UTF_8))
     )
+
+  override def deleteImport(applicationId: Long, itemNumber: Int): Future[Unit] =
+    collection
+      .deleteOne(and(equal("applicationId", applicationId), equal("purchaseDetails.itemNumber", itemNumber), equal("purchaseImport.itemType", "I")))
+      .toFuture()
+      .map(_ => ())
 
   private def defaultEntries(applicationId: Long): List[StoredPurchaseDetails] = applicationId match {
     case 111 => List(storedDefault(applicationId, itemNumber = 1, itemType = "P"))

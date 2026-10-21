@@ -85,6 +85,16 @@ class InMemoryPurchaseImportRepository extends PurchaseImportRepository with Log
     }
   }
 
+  override def deleteImport(applicationId: Long, itemNumber: Int): Future[Unit] = Future.successful {
+    data.synchronized {
+      val existing = data.getOrElse(applicationId, Vector.empty)
+      data.update(
+        applicationId,
+        existing.filterNot(entry => entry.purchaseImport.itemType == "I" && entry.purchaseImport.itemNumber == itemNumber)
+      )
+    }
+  }
+
   private def defaultEntries(applicationId: Long): Vector[StoredPurchaseDetails] = applicationId match {
     case 111 => Vector(storedDefault(applicationId, 1, "P"))
     case 999 => Vector(storedDefault(applicationId, 2, "I"))
