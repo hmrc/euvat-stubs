@@ -429,3 +429,15 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         Ok(Json.toJson(UpdateApplicationDetailsResponse(newSeq)))
     }
   }
+
+  def deleteImport(): Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: deleteImport called")
+
+    request.body.asJson.flatMap(_.asOpt[DeleteImportRequest]) match {
+      case None => BadRequest("Invalid or missing request body")
+      case Some(req) =>
+        val newSeq = req.updateSequenceNumber
+        logger.info(s"Stub deleteImport: applicationId=${req.applicationId}, itemNumber=${req.itemNumber}, newSeq=$newSeq")
+        Ok(Json.obj("updateSequenceNumber" -> newSeq))
+    }
+  }
