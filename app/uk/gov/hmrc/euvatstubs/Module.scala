@@ -16,8 +16,10 @@
 
 package uk.gov.hmrc.euvatstubs
 
-import play.api.{Configuration, Environment}
+import play.api.{Configuration, Environment, Mode}
 import play.api.inject.{Binding, Module as AppModule}
+
+import uk.gov.hmrc.euvatstubs.repositories.{InMemoryPurchaseImportRepository, MongoPurchaseImportRepository, PurchaseImportRepository}
 
 import java.time.Clock
 
@@ -27,5 +29,10 @@ class Module extends AppModule:
     environment: Environment,
     configuration: Configuration
   ): Seq[Binding[_]] =
-    bind[Clock].toInstance(Clock.systemDefaultZone) :: // inject if current time needs to be controlled in unit tests
-      Nil
+    val purchaseImportRepositoryBinding: Binding[PurchaseImportRepository] = environment.mode match
+      case Mode.Test => bind[PurchaseImportRepository].to[InMemoryPurchaseImportRepository]
+      case _         => bind[PurchaseImportRepository].to[MongoPurchaseImportRepository]
+
+    bind[Clock].toInstance(
+      Clock.systemDefaultZone
+    ) :: purchaseImportRepositoryBinding :: Nil
