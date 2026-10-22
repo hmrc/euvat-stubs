@@ -221,36 +221,20 @@ class EuVatCandeDataController @Inject() (
     }
   }
 
-  private val importDetailsResponse: GetImportDetailsResponse = GetImportDetailsResponse(
-    applicationId               = 404,
-    itemNumber                  = 4,
-    issuingDate                 = Some(LocalDateTime.of(2026, 5, 14, 0, 0)),
-    supplierName                = Some("Finnish International"),
-    supplierAddressLine1        = Some("356 High Street"),
-    supplierAddressLine2        = Some("Rochdale"),
-    supplierAddressLine3        = Some("England"),
-    supplierCountryCode         = Some("GB"),
-    goodsDescriptionCategory    = "10",
-    goodsDescriptionSubcategory = Some("10.4.1"),
-    goodsDescriptionText        = Some(""),
-    hasSadReferenceNumber       = Some("Y"),
-    sadReferenceNumber          = Some("SAD123456789"),
-    referenceInformation        = Some("Import declaration reference"),
-    currencyCode                = Some("EUR"),
-    taxableAmount               = Some(BigDecimal("1000")),
-    vatAmount                   = Some(BigDecimal("99")),
-    deductibleVatAmount         = Some(BigDecimal("40")),
-    updateSequenceNumber        = 1,
-    periodStartDate             = LocalDateTime.of(2026, 1, 1, 0, 0)
-  )
-
-  def getImportDetails(applicationId: Long, itemNumber: Int): Action[AnyContent] = Action { implicit request =>
+  def getImportDetails(applicationId: Long, itemNumber: Int): Action[AnyContent] = Action.async { implicit request =>
     logger.info("Stub: returning import details")
 
     // Simulate backend/database connectivity failure when applicationId ends with 500
-    if (applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
-    else if (applicationId == 0) BadRequest(s"No import found for the requested applicationId: $applicationId")
-    else Ok(Json.toJson(importDetailsResponse.copy(applicationId = applicationId, itemNumber = itemNumber)))
+    if (applicationId % 1000 == 500) Future.successful(InternalServerError("Simulated database connectivity failure"))
+    else if (applicationId == 0) Future.successful(BadRequest(s"No import found for the requested applicationId: $applicationId"))
+    else {
+      purchaseImportRepository.seedDefaultPurchaseDetails(sessionId(request), applicationId).flatMap { _ =>
+        purchaseImportRepository.findImportDetails(sessionId(request), applicationId, itemNumber).map {
+          case Some(importDetails) => Ok(Json.toJson(importDetails))
+          case None                => NotFound("Import details not found")
+        }
+      }
+    }
   }
 
   def getPurchaseDetailsByPath(applicationId: Long, itemNumber: Int): Action[AnyContent] = Action.async { implicit request =>
@@ -478,7 +462,7 @@ class EuVatCandeDataController @Inject() (
       case Some(req) =>
         val newSeq = req.updateSequenceNumber
         logger.info(s"Stub deleteImport: applicationId=${req.applicationId}, itemNumber=${req.itemNumber}, newSeq=$newSeq")
-        purchaseImportRepository.deleteImport(req.applicationId, req.itemNumber).map { _ =>
+        purchaseImportRepository.deleteImport(sessionId(request), req.applicationId, req.itemNumber).map { _ =>
           Ok(Json.obj("updateSequenceNumber" -> newSeq))
         }
     }

@@ -22,8 +22,33 @@ import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.Json
 import uk.gov.hmrc.euvatstubs.models.PurchaseImport
 import uk.gov.hmrc.euvatstubs.models.requests.UpdatePurchaseDetailsRequest
+import uk.gov.hmrc.euvatstubs.repositories.InMemoryPurchaseImportRepository as SessionRepository
+
+import scala.concurrent.Future
 
 class PurchaseImportRepositorySpec extends AnyWordSpec with Matchers with ScalaFutures {
+
+  private class InMemoryPurchaseImportRepository extends SessionRepository {
+    private val session = "repository-spec"
+
+    def savePurchaseDetails(applicationId: Long, details: UpdatePurchaseDetailsRequest): Future[UpdatePurchaseDetailsRequest] =
+      super.savePurchaseDetails(session, applicationId, details)
+
+    def findPurchaseDetails(applicationId: Long, itemNumber: Int): Future[Option[UpdatePurchaseDetailsRequest]] =
+      super.findPurchaseDetails(session, applicationId, itemNumber)
+
+    def findImportDetails(applicationId: Long, itemNumber: Int) =
+      super.findImportDetails(session, applicationId, itemNumber)
+
+    def findPurchaseImports(applicationId: Long): Future[List[PurchaseImport]] =
+      super.findPurchaseImports(session, applicationId)
+
+    def seedDefaultPurchaseDetails(applicationId: Long): Future[Unit] =
+      super.seedDefaultPurchaseDetails(session, applicationId)
+
+    def deleteImport(applicationId: Long, itemNumber: Int): Future[Unit] =
+      super.deleteImport(session, applicationId, itemNumber)
+  }
 
   "InMemoryPurchaseImportRepository" should {
     "keep a deleted seeded import deleted on subsequent list requests" in {
@@ -55,12 +80,12 @@ class PurchaseImportRepositorySpec extends AnyWordSpec with Matchers with ScalaF
       val replaced = repository.savePurchaseDetails(123456, purchaseDetails(123456, first.itemNumber, "11")).futureValue
       val added = repository.savePurchaseDetails(123456, purchaseDetails(123456, 0, "12")).futureValue
 
-      replaced.itemNumber shouldBe first.itemNumber
-      added.itemNumber shouldBe first.itemNumber + 1
+      replaced.itemNumber                                                                                  shouldBe first.itemNumber
+      added.itemNumber                                                                                     shouldBe first.itemNumber + 1
       repository.findPurchaseDetails(123456, first.itemNumber).futureValue.map(_.goodsDescriptionCategory) shouldBe Some("11")
       repository.findPurchaseDetails(123456, added.itemNumber).futureValue.map(_.goodsDescriptionCategory) shouldBe Some("12")
-      repository.findPurchaseDetails(123456, 99).futureValue shouldBe None
-      repository.findPurchaseImports(123456).futureValue should have size 2
+      repository.findPurchaseDetails(123456, 99).futureValue                                               shouldBe None
+      repository.findPurchaseImports(123456).futureValue                                                     should have size 2
     }
 
     "seed the configured purchase fixture for application 111" in {
@@ -70,7 +95,50 @@ class PurchaseImportRepositorySpec extends AnyWordSpec with Matchers with ScalaF
 
       val items = repository.findPurchaseImports(111).futureValue
       items.map(_.itemNumber) shouldBe List(1)
+      items.map(_.itemType)   shouldBe List("P")
+    }
+
+    "seed one purchase and one import for an arbitrary application" in {
+      val repository = new InMemoryPurchaseImportRepository
+
+      repository.seedDefaultPurchaseDetails(23)
+
+      val items = repository.findPurchaseImports(23).futureValue
+      items.map(_.itemType).toSet                                       shouldBe Set("P", "I")
+      items.map(_.itemNumber).toSet                                     shouldBe Set(2, 3)
+      repository.findImportDetails(23, 2).futureValue.map(_.itemNumber) shouldBe Some(2)
+    }
+
+    "seed the default import when an added purchase already uses item number 4" in {
+      val repository = new InMemoryPurchaseImportRepository
+      repository.savePurchaseDetails(23, purchaseDetails(23, 4, "8")).futureValue
+
+      repository.seedDefaultPurchaseDetails(23).futureValue
+
+      val items = repository.findPurchaseImports(23).futureValue
+      items.find(_.itemType == "I").map(_.itemNumber)                                                  shouldBe Some(2)
+      items.find(item => item.itemType == "P" && item.itemNumber == 4).map(_.goodsDescriptionCategory) shouldBe Some("8")
+    }
+
+    "not recreate a default import after it has been deleted" in {
+      val repository = new InMemoryPurchaseImportRepository
+      repository.seedDefaultPurchaseDetails(23).futureValue
+
+      repository.deleteImport(23, 2).futureValue
+      repository.seedDefaultPurchaseDetails(23).futureValue
+
+      val items = repository.findPurchaseImports(23).futureValue
       items.map(_.itemType) shouldBe List("P")
+    }
+
+    "find import details by application and item number" in {
+      val repository = new InMemoryPurchaseImportRepository
+      repository.seedDefaultPurchaseDetails(402).futureValue
+
+      repository.findImportDetails(402, 4).futureValue.map(_.supplierName) shouldBe Some(Some("Finnish International"))
+      repository.findImportDetails(402, 6).futureValue.map(_.supplierName) shouldBe Some(Some("Baltic Importers"))
+      repository.findImportDetails(402, 1).futureValue                     shouldBe None
+      repository.findImportDetails(999, 4).futureValue                     shouldBe None
     }
   }
 
@@ -90,9 +158,9 @@ class PurchaseImportRepositorySpec extends AnyWordSpec with Matchers with ScalaF
 
       val stored = legacyJson.as[StoredPurchaseDetails]
 
-      stored.purchaseDetails.applicationId shouldBe 123L
-      stored.purchaseDetails.itemNumber shouldBe 3
-      stored.purchaseImport.itemType shouldBe "I"
+      stored.purchaseDetails.applicationId          shouldBe 123L
+      stored.purchaseDetails.itemNumber             shouldBe 3
+      stored.purchaseImport.itemType                shouldBe "I"
       Json.toJson(stored).as[StoredPurchaseDetails] shouldBe stored
     }
 
@@ -102,10 +170,10 @@ class PurchaseImportRepositorySpec extends AnyWordSpec with Matchers with ScalaF
 
       val stored = legacyJson.as[StoredPurchaseDetails]
 
-      stored.purchaseDetails shouldBe details
-      stored.purchaseImport.itemType shouldBe "P"
+      stored.purchaseDetails                         shouldBe details
+      stored.purchaseImport.itemType                 shouldBe "P"
       stored.purchaseImport.goodsDescriptionCategory shouldBe "8"
-      stored.purchaseImport.currencyCode shouldBe "EUR"
+      stored.purchaseImport.currencyCode             shouldBe "EUR"
     }
   }
 

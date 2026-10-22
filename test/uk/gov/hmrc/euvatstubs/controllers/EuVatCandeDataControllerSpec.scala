@@ -26,10 +26,12 @@ import play.api.test.Helpers.*
 import uk.gov.hmrc.euvatstubs.models.responses.*
 import uk.gov.hmrc.euvatstubs.models.PurchaseImport
 import uk.gov.hmrc.euvatstubs.models.requests.UpdatePurchaseDetailsRequest
-import uk.gov.hmrc.euvatstubs.repositories.{InMemoryPurchaseImportRepository, PurchaseImportRepository, StoredPurchaseDetails}
+import uk.gov.hmrc.euvatstubs.repositories.{PurchaseImportRepository, StoredPurchaseDetails}
 
+import java.time.LocalDateTime
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.collection.mutable
 
 class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
@@ -41,6 +43,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
   private class InMemoryPurchaseImportRepository extends PurchaseImportRepository {
     private val data = mutable.Map.empty[(String, Long), Vector[StoredPurchaseDetails]]
+    private val seededApplications = mutable.Set.empty[(String, Long)]
 
     override def savePurchaseDetails(
       sessionId: String,
@@ -71,7 +74,8 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
             vatAmount                   = savedDetails.vatAmount.getOrElse(BigDecimal(0)),
             deductibleVatAmount         = savedDetails.deductibleVatAmount.getOrElse(BigDecimal(0))
           ),
-          sessionId
+          sessionId,
+          existing.find(_.purchaseDetails.itemNumber == assignedItemNumber).flatMap(_.importDetails)
         )
 
         data.update(key, existing.filterNot(_.purchaseDetails.itemNumber == assignedItemNumber) :+ stored)
@@ -83,24 +87,43 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
         data.getOrElse(sessionId -> applicationId, Vector.empty).find(_.purchaseDetails.itemNumber == itemNumber).map(_.purchaseDetails)
       )
 
+    override def findImportDetails(
+      sessionId: String,
+      applicationId: Long,
+      itemNumber: Int
+    ): Future[Option[GetImportDetailsResponse]] =
+      Future.successful(
+        data.getOrElse(sessionId -> applicationId, Vector.empty).find(_.purchaseDetails.itemNumber == itemNumber).flatMap(_.importDetails)
+      )
+
     override def findPurchaseImports(sessionId: String, applicationId: Long): Future[List[PurchaseImport]] =
       Future.successful(data.getOrElse(sessionId -> applicationId, Vector.empty).map(_.purchaseImport).toList)
 
     override def deletePurchaseDetails(sessionId: String, applicationId: Long): Future[Unit] = Future.successful {
-      data.remove(sessionId -> applicationId)
+      data.remove(sessionId               -> applicationId)
+      seededApplications.remove(sessionId -> applicationId)
       ()
     }
 
     override def seedDefaultPurchaseDetails(sessionId: String, applicationId: Long): Future[Unit] =
       Future.successful {
         val key = sessionId -> applicationId
-        val existing = data.getOrElse(key, Vector.empty)
-        val existingItemNumbers = existing.map(_.purchaseDetails.itemNumber).toSet
-        val seeds = defaultEntries(applicationId)
-          .filterNot(entry => existingItemNumbers.contains(entry.purchaseDetails.itemNumber))
-          .map(_.copy(sessionKey = sessionId))
-        if (seeds.nonEmpty) data.update(key, existing ++ seeds)
+        if (!seededApplications.contains(key)) {
+          val existing = data.getOrElse(key, Vector.empty)
+          val seeds = defaultEntriesToSeed(applicationId, existing).map(_.copy(sessionKey = sessionId))
+          if (seeds.nonEmpty) data.update(key, existing ++ seeds)
+          seededApplications.add(key)
+        }
       }
+
+    override def deleteImport(sessionId: String, applicationId: Long, itemNumber: Int): Future[Unit] = Future.successful {
+      val key = sessionId -> applicationId
+      data.update(
+        key,
+        data.getOrElse(key, Vector.empty).filterNot(entry => entry.purchaseImport.itemType == "I" && entry.purchaseImport.itemNumber == itemNumber)
+      )
+      ()
+    }
 
     private def defaultEntries(applicationId: Long): Vector[StoredPurchaseDetails] = applicationId match {
       case 111 => Vector(storedDefault(applicationId, 1, "P"))
@@ -114,7 +137,29 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
           storedDefault(applicationId, 6, "I", goodsDescriptionCategory = "10", deductibleVatAmount = 0),
           storedDefault(applicationId, 3, "P", goodsDescriptionCategory = "9", deductibleVatAmount  = 999)
         )
-      case _ => Vector(storedDefault(applicationId, 3, "P", goodsDescriptionCategory = "7", deductibleVatAmount = 111.11))
+      case _ =>
+        Vector(
+          storedDefault(applicationId, 3, "P", goodsDescriptionCategory = "7", deductibleVatAmount = 111.11),
+          storedDefault(applicationId, 2, "I", goodsDescriptionCategory = "10")
+        )
+    }
+
+    private def defaultEntriesToSeed(applicationId: Long, existing: Vector[StoredPurchaseDetails]): Vector[StoredPurchaseDetails] = {
+      val defaults = defaultEntries(applicationId)
+      val existingNumbers = existing.map(_.purchaseDetails.itemNumber).toSet
+      if (applicationId == 111 || applicationId == 999 || applicationId == 402)
+        defaults.filterNot(entry => existingNumbers.contains(entry.purchaseDetails.itemNumber))
+      else {
+        val purchase = defaults.find(_.purchaseImport.itemType == "P").filterNot(entry => existingNumbers.contains(entry.purchaseDetails.itemNumber))
+        val importSeed =
+          defaults.find(_.purchaseImport.itemType == "I").filter(_ => !existing.exists(_.purchaseImport.itemType == "I")).map { entry =>
+            val occupied = existingNumbers ++ purchase.map(_.purchaseDetails.itemNumber)
+            val itemNumber =
+              if (occupied.contains(entry.purchaseDetails.itemNumber)) occupied.maxOption.getOrElse(0) + 1 else entry.purchaseDetails.itemNumber
+            storedDefault(applicationId, itemNumber, "I", goodsDescriptionCategory = entry.purchaseDetails.goodsDescriptionCategory)
+          }
+        purchase.toVector ++ importSeed.toVector
+      }
     }
 
     private def storedDefault(
@@ -149,6 +194,13 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
         deductibleVatAmount         = Some(deductibleVatAmount),
         updateSequenceNumber        = 1
       )
+      val (supplierName, addressLine1, addressLine2, addressLine3, countryCode, issuingDate) = (applicationId, itemNumber) match {
+        case (402, 4) =>
+          (Some("Finnish International"), Some("356 High Street"), Some("Rochdale"), Some("England"), Some("GB"), LocalDateTime.of(2026, 5, 14, 0, 0))
+        case (402, 6) =>
+          (Some("Baltic Importers"), Some("2 Harbour Road"), Some("Riga"), Some("Latvia"), Some("LV"), LocalDateTime.of(2026, 6, 2, 0, 0))
+        case _ => (None, None, None, None, None, LocalDateTime.of(2026, 4, 1, 0, 0))
+      }
 
       StoredPurchaseDetails(
         applicationId,
@@ -162,7 +214,32 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
           taxableAmount               = taxableAmount,
           vatAmount                   = vatAmount,
           deductibleVatAmount         = deductibleVatAmount
-        )
+        ),
+        sessionKey = "legacy",
+        importDetails = Option.when(itemType == "I") {
+          GetImportDetailsResponse(
+            applicationId               = applicationId,
+            itemNumber                  = itemNumber,
+            issuingDate                 = Some(issuingDate),
+            supplierName                = supplierName,
+            supplierAddressLine1        = addressLine1,
+            supplierAddressLine2        = addressLine2,
+            supplierAddressLine3        = addressLine3,
+            supplierCountryCode         = countryCode,
+            goodsDescriptionCategory    = goodsDescriptionCategory,
+            goodsDescriptionSubcategory = goodsDescriptionSubCategory,
+            goodsDescriptionText        = None,
+            hasSadReferenceNumber       = None,
+            sadReferenceNumber          = None,
+            referenceInformation        = None,
+            currencyCode                = Some(currencyCode),
+            taxableAmount               = Some(taxableAmount),
+            vatAmount                   = Some(vatAmount),
+            deductibleVatAmount         = Some(deductibleVatAmount),
+            updateSequenceNumber        = 1,
+            periodStartDate             = LocalDateTime.of(2026, 1, 1, 0, 0)
+          )
+        }
       )
     }
   }
@@ -423,18 +500,39 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
   "EuVatCandeDataController.getImportDetails" should {
     "return import details for valid request" in {
-      val fakeRequest = FakeRequest("GET", "/rds-cande-proxy/get-import-details/404/4")
+      val fakeRequest = FakeRequest("GET", "/rds-cande-proxy/get-import-details/402/4")
 
-      val result = controller.getImportDetails(404, 4)(fakeRequest)
+      val result = controller.getImportDetails(402, 4)(fakeRequest)
 
       status(result) mustBe OK
       val json = contentAsJson(result)
-      (json \ "applicationId").as[Int] mustBe 404
+      (json \ "applicationId").as[Int] mustBe 402
       (json \ "itemNumber").as[Int] mustBe 4
       (json \ "supplierName").asOpt[String] mustBe Some("Finnish International")
       (json \ "issuingDate").as[String] mustBe "2026-05-14T00:00:00"
       (json \ "periodStartDate").as[String] mustBe "2026-01-01T00:00:00"
       (json \ "supplierCountryCode").asOpt[String] mustBe Some("GB")
+    }
+
+    "return details for the requested import item rather than a fixed payload" in {
+      val fakeRequest = FakeRequest("GET", "/rds-cande-proxy/get-import-details/402/6")
+
+      val result = controller.getImportDetails(402, 6)(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      (json \ "applicationId").as[Long] mustBe 402L
+      (json \ "itemNumber").as[Int] mustBe 6
+      (json \ "supplierName").asOpt[String] mustBe Some("Baltic Importers")
+      (json \ "supplierCountryCode").asOpt[String] mustBe Some("LV")
+    }
+
+    "return NotFound when the item is not an import" in {
+      val fakeRequest = FakeRequest("GET", "/rds-cande-proxy/get-import-details/402/1")
+
+      val result = controller.getImportDetails(402, 1)(fakeRequest)
+
+      status(result) mustBe NOT_FOUND
     }
 
     "simulate 5xx and return 500 for applicationId ending with 500" in {
@@ -604,7 +702,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
         .withJsonBody(Json.obj("applicationId" -> 660))
         .withHeaders("Content-Type" -> "application/json")
       val listResult = ctrl.getPurchaseImportList()(listRequest)
-      (contentAsJson(listResult) \ "purchaseImportList").as[JsArray].value.map(item => (item \ "itemNumber").as[Int]) mustBe List(3, 4)
+      (contentAsJson(listResult) \ "purchaseImportList").as[JsArray].value.map(item => (item \ "itemNumber").as[Int]) mustBe List(2, 3, 4)
 
       val newDetails = ctrl.getPurchaseDetails()(
         FakeRequest("POST", "/get-purchase-details")
@@ -966,7 +1064,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       status(listResult) mustBe OK
       val listJson = contentAsJson(listResult)
-      (listJson \ "totalItems").as[Int] mustBe 2
+      (listJson \ "totalItems").as[Int] mustBe 3
 
       val detailRequest = FakeRequest("POST", "/get-purchase-details")
         .withJsonBody(Json.obj("applicationId" -> 234567, "itemNumber" -> 7))
@@ -1026,11 +1124,12 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       status(listResult) mustBe OK
 
       val json = contentAsJson(listResult)
-      (json \ "totalItems").as[Int] mustBe 3
+      (json \ "totalItems").as[Int] mustBe 4
       val imports = (json \ "purchaseImportList").as[JsArray].value
       imports.exists(item => (item \ "itemNumber").as[Int] == 1) mustBe true
       imports.exists(item => (item \ "itemNumber").as[Int] == 2) mustBe true
       imports.exists(item => (item \ "goodsDescriptionCategory").as[String] == "10") mustBe true
+      imports.exists(item => (item \ "itemType").as[String] == "I") mustBe true
     }
 
     "return BadRequest when no JSON body provided" in {
@@ -1114,7 +1213,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       .withJsonBody(Json.obj("applicationId" -> appId))
       .withHeaders("Content-Type" -> "application/json")
 
-    "return purchase import list with 1 item" in {
+    "return purchase import list with 1 item for application 999" in {
       val result = controller.getPurchaseImportList()(fakeRequest(999))
       status(result) mustBe OK
 
@@ -1122,12 +1221,14 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       (json \ "totalItems").as[Int] mustBe 1
     }
 
-    "return purchase import list with 3 items" in {
+    "return one purchase and one import for an arbitrary application" in {
       val result = controller.getPurchaseImportList()(fakeRequest(23))
       status(result) mustBe OK
 
       val json = contentAsJson(result)
-      (json \ "totalItems").as[Int] mustBe 1
+      (json \ "totalItems").as[Int] mustBe 2
+      val items = (json \ "purchaseImportList").as[JsArray].value
+      items.map(item => (item \ "itemType").as[String]).toSet mustBe Set("P", "I")
     }
 
     "return BadRequest for invalid appId" in {
