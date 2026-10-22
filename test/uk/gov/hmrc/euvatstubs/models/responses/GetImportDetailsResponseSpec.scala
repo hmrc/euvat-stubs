@@ -30,8 +30,8 @@ class GetImportDetailsResponseSpec extends AnyWordSpec with Matchers {
     issuingDate                 = Some(LocalDateTime.of(2026, 5, 14, 0, 0)),
     supplierName                = Some("Finnish International"),
     supplierAddressLine1        = Some("356 High Street"),
-    supplierAddress2            = Some("Rochdale"),
-    supplierAddress3            = Some("England"),
+    supplierAddressLine2        = Some("Rochdale"),
+    supplierAddressLine3        = Some("England"),
     supplierCountryCode         = Some("GB"),
     goodsDescriptionCategory    = "10",
     goodsDescriptionSubcategory = Some("10.4.1"),
@@ -50,7 +50,11 @@ class GetImportDetailsResponseSpec extends AnyWordSpec with Matchers {
   "GetImportDetailsResponse JSON format" should {
 
     "round-trip a fully populated response" in {
-      Json.toJson(fullResponse).as[GetImportDetailsResponse] shouldBe fullResponse
+      val json = Json.toJson(fullResponse)
+
+      (json \ "supplierAddressLine2").as[String] shouldBe "Rochdale"
+      (json \ "supplierAddressLine3").as[String] shouldBe "England"
+      json.as[GetImportDetailsResponse]          shouldBe fullResponse
     }
 
     "omit absent optional fields from the JSON" in {
@@ -58,8 +62,8 @@ class GetImportDetailsResponseSpec extends AnyWordSpec with Matchers {
         issuingDate                 = None,
         supplierName                = None,
         supplierAddressLine1        = None,
-        supplierAddress2            = None,
-        supplierAddress3            = None,
+        supplierAddressLine2        = None,
+        supplierAddressLine3        = None,
         supplierCountryCode         = None,
         goodsDescriptionSubcategory = None,
         goodsDescriptionText        = None,
