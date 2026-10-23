@@ -429,3 +429,21 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         Ok(Json.toJson(UpdateApplicationDetailsResponse(newSeq)))
     }
   }
+
+  def getSadReferenceCount: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: returning SAD reference count")
+
+    request.body.asJson.flatMap(_.validate[SadReferenceCountRequest].asOpt) match {
+      case None                                                => BadRequest("Invalid or missing request body")
+      case Some(req) if req.sadReferenceNumber.endsWith("500") => InternalServerError("Simulated database connectivity failure")
+      case Some(req) =>
+        val count = req.sadReferenceNumber.takeRight(3) match {
+          case "111" => 1
+          case "222" => 2
+          case _     => 0
+        }
+
+        logger.info(s"Stub getSadReferenceCount: sadReferenceNumber=${req.sadReferenceNumber},count=$count")
+        Ok(Json.toJson(SadReferenceCountResponse(count)))
+    }
+  }
