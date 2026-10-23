@@ -22,10 +22,10 @@ import play.api.libs.json.Json
 
 class SadReferenceCountResponseSpec extends AnyWordSpec with Matchers {
 
-  "SupplierVrnCountResponse JSON format" should {
+  "SadReferenceCountResponse JSON format" should {
 
     "serialize to JSON correctly" in {
-      val response = SupplierVrnCountResponse(duplicateCount = 3)
+      val response = SadReferenceCountResponse(duplicateCount = 3)
 
       Json.toJson(response) shouldBe Json.obj("duplicateCount" -> 3)
     }
@@ -33,7 +33,7 @@ class SadReferenceCountResponseSpec extends AnyWordSpec with Matchers {
     "deserialize from JSON correctly" in {
       val json = Json.obj("duplicateCount" -> 3)
 
-      json.as[SupplierVrnCountResponse] shouldBe SupplierVrnCountResponse(duplicateCount = 3)
+      json.as[SadReferenceCountResponse] shouldBe SadReferenceCountResponse(duplicateCount = 3)
     }
   }
 }
