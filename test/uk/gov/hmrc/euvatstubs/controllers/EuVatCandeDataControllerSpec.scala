@@ -125,6 +125,15 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       ()
     }
 
+    override def deletePurchase(sessionId: String, applicationId: Long, itemNumber: Int): Future[Unit] = Future.successful {
+      val key = sessionId -> applicationId
+      data.update(
+        key,
+        data.getOrElse(key, Vector.empty).filterNot(entry => entry.purchaseImport.itemType == "P" && entry.purchaseImport.itemNumber == itemNumber)
+      )
+      ()
+    }
+
     private def defaultEntries(applicationId: Long): Vector[StoredPurchaseDetails] = applicationId match {
       case 111 => Vector(storedDefault(applicationId, 1, "P"))
       case 999 => Vector(storedDefault(applicationId, 2, "I"))
@@ -1265,6 +1274,40 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val items = (json \ "purchaseImportList").as[JsArray].value
       items.exists(item => (item \ "itemNumber").as[Int] == 4) mustBe false
       items.exists(item => (item \ "itemNumber").as[Int] == 6) mustBe true
+    }
+
+    "delete the requested purchase and retain imports and sibling items" in {
+      val ctrl = newController()
+      val initialList = ctrl.getPurchaseImportList()(fakeRequest(402))
+      status(initialList) mustBe OK
+
+      val deleteRequest = FakeRequest("DELETE", "/rds-cande-proxy/delete-purchase")
+        .withJsonBody(Json.obj("applicationId" -> 402, "itemNumber" -> 5, "updateSequenceNumber" -> 8))
+        .withHeaders("Content-Type" -> "application/json")
+      val deleteResult = ctrl.deletePurchase(deleteRequest)
+
+      status(deleteResult) mustBe OK
+      (contentAsJson(deleteResult) \ "updateSequenceNumber").as[Int] mustBe 9
+
+      val listAfterDelete = ctrl.getPurchaseImportList()(fakeRequest(402))
+      val json = contentAsJson(listAfterDelete)
+      (json \ "totalItems").as[Int] mustBe 5
+      val items = (json \ "purchaseImportList").as[JsArray].value
+      items.exists(item => (item \ "itemNumber").as[Int] == 5) mustBe false
+      items.exists(item => (item \ "itemNumber").as[Int] == 4 && (item \ "itemType").as[String] == "I") mustBe true
+      items.exists(item => (item \ "itemNumber").as[Int] == 1) mustBe true
+    }
+
+    "return BadRequest for invalid delete-purchase requests and simulate backend failures" in {
+      val invalidRequest = FakeRequest("DELETE", "/rds-cande-proxy/delete-purchase")
+        .withJsonBody(Json.obj("applicationId" -> 402))
+        .withHeaders("Content-Type" -> "application/json")
+      status(controller.deletePurchase(invalidRequest)) mustBe BAD_REQUEST
+
+      val failureRequest = FakeRequest("DELETE", "/rds-cande-proxy/delete-purchase")
+        .withJsonBody(Json.obj("applicationId" -> 402, "itemNumber" -> 500, "updateSequenceNumber" -> 8))
+        .withHeaders("Content-Type" -> "application/json")
+      status(controller.deletePurchase(failureRequest)) mustBe INTERNAL_SERVER_ERROR
     }
   }
 

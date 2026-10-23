@@ -87,6 +87,21 @@ class InMemoryPurchaseImportRepositorySpec extends PlaySpec {
       await(repository.findPurchaseDetails("session-two", 123, 4)).map(_.goodsDescriptionCategory) mustBe Some("second session")
     }
 
+    "delete only the matching purchase in the requested session" in {
+      val repository = new InMemoryPurchaseImportRepository
+      await(repository.seedDefaultPurchaseDetails("session-one", 660))
+      await(repository.seedDefaultPurchaseDetails("session-two", 660))
+      await(repository.savePurchaseDetails("session-one", 660, request(660, 4, "added purchase")))
+
+      await(repository.deletePurchase("session-one", 660, 3))
+      await(repository.deletePurchase("session-one", 660, 2))
+
+      val sessionOneItems = await(repository.findPurchaseImports("session-one", 660))
+      val sessionTwoItems = await(repository.findPurchaseImports("session-two", 660))
+      sessionOneItems.map(item => item.itemNumber -> item.itemType).toSet mustBe Set(2 -> "I", 4 -> "P")
+      sessionTwoItems.map(item => item.itemNumber -> item.itemType).toSet mustBe Set(2 -> "I", 3 -> "P")
+    }
+
     "seed the known default applications once and preserve their list values" in {
       val repository = new InMemoryPurchaseImportRepository
 

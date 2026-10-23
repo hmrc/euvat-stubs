@@ -37,6 +37,7 @@ trait PurchaseImportRepository {
   def findPurchaseImports(sessionId: String, applicationId: Long): Future[List[PurchaseImport]]
   def seedDefaultPurchaseDetails(sessionId: String, applicationId: Long): Future[Unit]
   def deletePurchaseDetails(sessionId: String, applicationId: Long): Future[Unit]
+  def deletePurchase(sessionId: String, applicationId: Long, itemNumber: Int): Future[Unit]
   def deleteImport(sessionId: String, applicationId: Long, itemNumber: Int): Future[Unit]
 }
 
@@ -293,6 +294,19 @@ class MongoPurchaseImportRepository @Inject() (
           equal("applicationId", applicationId),
           equal("purchaseDetails.itemNumber", itemNumber),
           equal("purchaseImport.itemType", "I")
+        )
+      )
+      .toFuture()
+      .map(_ => ())
+
+  override def deletePurchase(sessionId: String, applicationId: Long, itemNumber: Int): Future[Unit] =
+    collection
+      .deleteOne(
+        and(
+          equal("sessionKey", sessionKey(sessionId)),
+          equal("applicationId", applicationId),
+          equal("purchaseDetails.itemNumber", itemNumber),
+          equal("purchaseImport.itemType", "P")
         )
       )
       .toFuture()
