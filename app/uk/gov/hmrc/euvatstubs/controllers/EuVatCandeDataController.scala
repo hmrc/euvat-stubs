@@ -18,11 +18,11 @@ package uk.gov.hmrc.euvatstubs.controllers
 
 import play.api.Logging
 import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
+import play.api.mvc.{Action, AnyContent, ControllerComponents, RequestHeader, Result}
 import uk.gov.hmrc.euvatstubs.models.requests.*
 import uk.gov.hmrc.euvatstubs.models.responses.*
-import uk.gov.hmrc.euvatstubs.models.{LatestApplication, PurchaseImport}
-import uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository
+import uk.gov.hmrc.euvatstubs.models.LatestApplication
+import uk.gov.hmrc.euvatstubs.repositories.{PurchaseImportRepository, VrnStateRepository}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.LocalDateTime
@@ -31,11 +31,17 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 @Singleton
-class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepository: VrnStateRepository)(implicit ec: ExecutionContext)
+class EuVatCandeDataController @Inject() (
+  cc: ControllerComponents,
+  vrnStateRepository: VrnStateRepository,
+  purchaseImportRepository: PurchaseImportRepository
+)(implicit ec: ExecutionContext)
     extends BackendController(cc)
     with Logging:
 
-  def addApplication(vrn: String): Action[AnyContent] = Action { implicit request =>
+  private def sessionId(request: RequestHeader): String = request.headers.get("X-Session-ID").getOrElse("anonymous")
+
+  def addApplication(vrn: String): Action[AnyContent] = Action.async { implicit request =>
     logger.info(s"Stub: Creating refund application for vrn: $vrn")
 
     val response = if (vrn.endsWith("111")) { ApplicationResponse(111, "GB123111", 1) }
@@ -44,7 +50,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     else if (vrn.endsWith("880")) { ApplicationResponse(402, "GB123406", 4) }
     else { ApplicationResponse(660, "GB123100", 6) }
 
-    Ok(Json.toJson(response))
+    purchaseImportRepository.deletePurchaseDetails(sessionId(request), response.applicationId.toLong).map(_ => Ok(Json.toJson(response)))
   }
 
   private def latestApplicationResponse(): LatestApplicationResponse = LatestApplicationResponse(
@@ -158,12 +164,39 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     }
   }
 
-  def addPurchase(): Action[AnyContent] = Action { implicit request =>
+  def addPurchase(): Action[AnyContent] = Action.async { implicit request =>
     logger.info("Stub: adding purchase")
 
     request.body.asJson.flatMap(_.asOpt[AddPurchaseRequest]) match {
-      case None    => BadRequest("Invalid or missing request body")
-      case Some(_) => Ok(Json.toJson(AddPurchaseResponse(itemNumber = 4, updateSequenceNumber = 1)))
+      case None => Future.successful(BadRequest("Invalid or missing request body"))
+      case Some(req) =>
+        val purchaseDetails = UpdatePurchaseDetailsRequest(
+          applicationId               = req.applicationId,
+          itemNumber                  = 0,
+          goodsDescriptionCategory    = req.goodsDescriptionCategory,
+          goodsDescriptionSubCategory = req.purchaseSubcategory,
+          goodsDescriptionText        = req.goodsDescriptionText,
+          simplifiedInvoiceIndicator  = req.simplifiedInvoiceIndicator,
+          supplierName                = req.supplierName,
+          supplierAddress1            = req.supplierAddress1,
+          supplierAddress2            = req.supplierAddress2,
+          supplierAddress3            = req.supplierAddress3,
+          supplierVatRegNumber        = req.supplierVatRegNumber,
+          supplierTaxIdentifier       = req.supplierTaxIdentifier,
+          invoiceDate                 = req.invoiceDate,
+          invoiceNumber               = req.invoiceNumber,
+          currencyCode                = req.currencyCode,
+          taxableAmount               = req.taxableAmount,
+          vatAmount                   = req.vatAmount,
+          deductibleVatAmount         = req.deductibleVatAmount,
+          updateSequenceNumber        = req.updateSequenceNumber
+        )
+
+        purchaseImportRepository.seedDefaultPurchaseDetails(sessionId(request), req.applicationId).flatMap { _ =>
+          purchaseImportRepository.savePurchaseDetails(sessionId(request), req.applicationId, purchaseDetails).map { savedDetails =>
+            Ok(Json.toJson(AddPurchaseResponse(itemNumber = savedDetails.itemNumber, updateSequenceNumber = savedDetails.updateSequenceNumber)))
+          }
+        }
     }
   }
 
@@ -178,66 +211,44 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     }
   }
 
-  private val purchaseDetailsResponse: GetPurchaseDetailsResponse = GetPurchaseDetailsResponse(
-    goodsDescriptionCode       = "1",
-    goodsDescriptionSubCode    = Some("1.1"),
-    goodsDescriptionText       = Some("Fuel"),
-    simplifiedInvoiceIndicator = Some("N"),
-    supplierName               = Some("Supplier Ltd"),
-    supplierAddressLine1       = Some("1 High Street"),
-    supplierAddressLine2       = Some("Riga"),
-    supplierAddressLine3       = None,
-    supplierVatNumber          = Some("LV40003567907"),
-    supplierTaxIdentifier      = None,
-    invoiceDate                = Some(LocalDateTime.of(2026, 3, 15, 0, 0)),
-    invoiceNumber              = Some("INV-001"),
-    currencyCode               = Some("EUR"),
-    taxableAmount              = Some(BigDecimal("100.50")),
-    vatAmount                  = Some(BigDecimal("21.10")),
-    deductibleVatAmount        = Some(BigDecimal("21.10")),
-    updateSequenceNumber       = 1
-  )
-
-  def getPurchaseDetails: Action[AnyContent] = Action { implicit request =>
+  def getPurchaseDetails: Action[AnyContent] = Action.async { implicit request =>
     logger.info("Stub: returning purchase details")
 
     request.body.asJson.flatMap(_.asOpt[GetPurchaseDetailsRequest]) match {
-      case Some(_) => Ok(Json.toJson(purchaseDetailsResponse))
-      case None    => BadRequest("Invalid or missing request body")
+      case Some(req) =>
+        getPurchaseDetailsForSession(sessionId(request), req.applicationId, req.itemNumber)
+      case None => Future.successful(BadRequest("Invalid or missing request body"))
     }
   }
 
-  private val importDetailsResponse: GetImportDetailsResponse = GetImportDetailsResponse(
-    applicationId               = 404,
-    itemNumber                  = 4,
-    issuingDate                 = Some(LocalDateTime.of(2026, 5, 14, 0, 0)),
-    supplierName                = Some("Finnish International"),
-    supplierAddressLine1        = Some("356 High Street"),
-    supplierAddressLine2        = Some("Rochdale"),
-    supplierAddressLine3        = Some("England"),
-    supplierCountryCode         = Some("GB"),
-    goodsDescriptionCategory    = "10",
-    goodsDescriptionSubcategory = Some("10.4.1"),
-    goodsDescriptionText        = Some(""),
-    hasSadReferenceNumber       = Some("Y"),
-    sadReferenceNumber          = Some("SAD123456789"),
-    referenceInformation        = Some("Import declaration reference"),
-    currencyCode                = Some("EUR"),
-    taxableAmount               = Some(BigDecimal("1000")),
-    vatAmount                   = Some(BigDecimal("99")),
-    deductibleVatAmount         = Some(BigDecimal("40")),
-    updateSequenceNumber        = 1,
-    periodStartDate             = LocalDateTime.of(2026, 1, 1, 0, 0)
-  )
-
-  def getImportDetails(applicationId: Long, itemNumber: Int): Action[AnyContent] = Action { implicit request =>
+  def getImportDetails(applicationId: Long, itemNumber: Int): Action[AnyContent] = Action.async { implicit request =>
     logger.info("Stub: returning import details")
 
     // Simulate backend/database connectivity failure when applicationId ends with 500
-    if (applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
-    else if (applicationId == 0) BadRequest(s"No import found for the requested applicationId: $applicationId")
-    else Ok(Json.toJson(importDetailsResponse.copy(applicationId = applicationId, itemNumber = itemNumber)))
+    if (applicationId % 1000 == 500) Future.successful(InternalServerError("Simulated database connectivity failure"))
+    else if (applicationId == 0) Future.successful(BadRequest(s"No import found for the requested applicationId: $applicationId"))
+    else {
+      purchaseImportRepository.seedDefaultPurchaseDetails(sessionId(request), applicationId).flatMap { _ =>
+        purchaseImportRepository.findImportDetails(sessionId(request), applicationId, itemNumber).map {
+          case Some(importDetails) => Ok(Json.toJson(importDetails))
+          case None                => NotFound("Import details not found")
+        }
+      }
+    }
   }
+
+  def getPurchaseDetailsByPath(applicationId: Long, itemNumber: Int): Action[AnyContent] = Action.async { implicit request =>
+    logger.info("Stub: returning purchase details")
+    getPurchaseDetailsForSession(sessionId(request), applicationId, itemNumber)
+  }
+
+  private def getPurchaseDetailsForSession(sessionId: String, applicationId: Long, itemNumber: Int): Future[Result] =
+    purchaseImportRepository.seedDefaultPurchaseDetails(sessionId, applicationId).flatMap { _ =>
+      purchaseImportRepository.findPurchaseDetails(sessionId, applicationId, itemNumber).map {
+        case Some(savedDetails) => Ok(Json.toJson(toPurchaseDetailsResponse(savedDetails)))
+        case None               => NotFound("Purchase details not found")
+      }
+    }
 
   def getSupplierTaxIdentifierCount: Action[AnyContent] = Action { implicit request =>
     logger.info("Stub: returning SupplierTaxIdentifierCount")
@@ -277,20 +288,24 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     }
   }
 
-  def updatePurchaseDetails(): Action[AnyContent] = Action { implicit request =>
+  def updatePurchaseDetails(): Action[AnyContent] = Action.async { implicit request =>
     logger.info("Stub: updatePurchaseDetails called")
     val bodyOpt = request.body.asJson
 
     bodyOpt match {
-      case None       => BadRequest("Invalid or missing request body")
+      case None       => Future.successful(BadRequest("Invalid or missing request body"))
       case Some(json) =>
         // invoice-only simulated errors
         (json \ "invoiceNumber").asOpt[String] match {
-          case Some("INV-UP-500") => InternalServerError("simulated 5xx")
-          case Some("INV-UP-400") => BadRequest("simulated 4xx")
+          case Some("INV-UP-500") => Future.successful(InternalServerError("simulated 5xx"))
+          case Some("INV-UP-400") => Future.successful(BadRequest("simulated 4xx"))
           case _ =>
             json.asOpt[UpdatePurchaseDetailsRequest] match {
-              case Some(req) => Ok(Json.obj("updateSequenceNumber" -> req.updateSequenceNumber))
+              case Some(req) =>
+                purchaseImportRepository.savePurchaseDetails(sessionId(request), req.applicationId, req).map { savedDetails =>
+                  Ok(Json.obj("updateSequenceNumber" -> savedDetails.updateSequenceNumber))
+                }
+
               case None =>
                 val applicationIdOpt: Option[Long] = (json \ "applicationId").asOpt[Long]
                 val goodsDescriptionCategoryOpt: Option[String] = (json \ "goodsDescriptionCategory").asOpt[String]
@@ -350,67 +365,76 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
                       updateSequenceNumber        = updateSeq
                     )
 
-                    Ok(Json.obj("updateSequenceNumber" -> req.updateSequenceNumber))
+                    purchaseImportRepository.savePurchaseDetails(sessionId(request), req.applicationId, req).map { savedDetails =>
+                      Ok(Json.obj("updateSequenceNumber" -> savedDetails.updateSequenceNumber))
+                    }
 
-                  case _ => BadRequest("Invalid or missing request body")
+                  case _ => Future.successful(BadRequest("Invalid or missing request body"))
                 }
             }
         }
     }
   }
 
-  private val purchaseImport: PurchaseImport = PurchaseImport(
-    itemNumber                  = 1,
-    itemType                    = "P",
-    goodsDescriptionCategory    = "1",
-    goodsDescriptionSubCategory = Some("1.2"),
-    currencyCode                = "DE",
-    taxableAmount               = 333,
-    vatAmount                   = 222,
-    deductibleVatAmount         = 111.11
+  private def toPurchaseDetailsResponse(savedDetails: UpdatePurchaseDetailsRequest): GetPurchaseDetailsResponse = GetPurchaseDetailsResponse(
+    goodsDescriptionCode       = savedDetails.goodsDescriptionCategory,
+    goodsDescriptionSubCode    = savedDetails.goodsDescriptionSubCategory,
+    goodsDescriptionText       = savedDetails.goodsDescriptionText,
+    simplifiedInvoiceIndicator = savedDetails.simplifiedInvoiceIndicator,
+    supplierName               = savedDetails.supplierName,
+    supplierAddressLine1       = savedDetails.supplierAddress1,
+    supplierAddressLine2       = savedDetails.supplierAddress2,
+    supplierAddressLine3       = savedDetails.supplierAddress3,
+    supplierVatNumber          = savedDetails.supplierVatRegNumber,
+    supplierTaxIdentifier      = savedDetails.supplierTaxIdentifier,
+    invoiceDate                = savedDetails.invoiceDate,
+    invoiceNumber              = savedDetails.invoiceNumber,
+    currencyCode               = savedDetails.currencyCode,
+    taxableAmount              = savedDetails.taxableAmount,
+    vatAmount                  = savedDetails.vatAmount,
+    deductibleVatAmount        = savedDetails.deductibleVatAmount,
+    updateSequenceNumber       = savedDetails.updateSequenceNumber
   )
 
-  def getPurchaseImportList: Action[AnyContent] = Action { implicit request =>
+  def getPurchaseImportList: Action[AnyContent] = Action.async { implicit request =>
     logger.info("Stub: returning purchase and import list")
 
-    request.body.asJson.flatMap(_.validate[PurchaseImportListRequest].asOpt).fold(BadRequest("Invalid or missing request body")) { request =>
-      request.applicationId match {
-        case 0 => BadRequest(s"No items found for the requested applicationId: ${request.applicationId}")
-        case _ =>
-          val response: List[PurchaseImport] =
-            request.applicationId match {
-              case 111 => List(purchaseImport)
-              case 999 => List(purchaseImport.copy(itemType = "I", itemNumber = 2, deductibleVatAmount = 0))
-              case 402 =>
-                List(
-                  purchaseImport.copy(goodsDescriptionCategory = "3", itemType = "I", itemNumber = 4, deductibleVatAmount = 0),
-                  purchaseImport,
-                  purchaseImport.copy(goodsDescriptionCategory = "7", itemType   = "P", itemNumber        = 5, deductibleVatAmount = 0),
-                  purchaseImport.copy(goodsDescriptionCategory = "9", itemNumber = 2, deductibleVatAmount = 123.45),
-                  purchaseImport.copy(goodsDescriptionCategory = "10", itemType  = "I", itemNumber        = 6, deductibleVatAmount = 0),
-                  purchaseImport.copy(goodsDescriptionCategory = "9", itemNumber = 3, deductibleVatAmount = 999)
+    request.body.asJson.flatMap(_.validate[PurchaseImportListRequest].asOpt).fold(Future.successful(BadRequest("Invalid or missing request body"))) {
+      listRequest =>
+        listRequest.applicationId match {
+          case 0 => Future.successful(BadRequest(s"No items found for the requested applicationId: ${listRequest.applicationId}"))
+          case _ =>
+            purchaseImportRepository.seedDefaultPurchaseDetails(sessionId(request), listRequest.applicationId).flatMap { _ =>
+              purchaseImportRepository.findPurchaseImports(sessionId(request), listRequest.applicationId).map { response =>
+                Ok(
+                  Json
+                    .toJson(
+                      PurchaseImportListResponse(
+                        totalItems         = response.size,
+                        purchaseImportList = response.sortBy(_.itemNumber),
+                        totalVatClaims     = BigDecimal(456.78)
+                      )
+                    )
                 )
-              case _ => List(purchaseImport.copy(goodsDescriptionCategory = "7", itemType = "P", itemNumber = 3, deductibleVatAmount = 111.11))
+              }
             }
-
-          Ok(Json.toJson(PurchaseImportListResponse(totalItems = response.size, purchaseImportList = response, totalVatClaims = BigDecimal(456.78))))
-      }
+        }
     }
   }
 
-  def deleteApplication: Action[AnyContent] = Action { implicit request =>
+  def deleteApplication: Action[AnyContent] = Action.async { implicit request =>
     logger.info("Stub: deleteApplication called")
     val bodyOpt = request.body.asJson
 
     bodyOpt match {
-      case None => BadRequest("Invalid or missing request body")
+      case None => Future.successful(BadRequest("Invalid or missing request body"))
       case Some(json) =>
         json.asOpt[DeleteApplicationRequest] match {
-          case None      => BadRequest("Invalid or missing request body")
+          case None      => Future.successful(BadRequest("Invalid or missing request body"))
           case Some(req) =>
             // Simulate a backend/database failure when applicationId ends with 500
-            if (req.applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
-            else Ok
+            if (req.applicationId % 1000 == 500) Future.successful(InternalServerError("Simulated database connectivity failure"))
+            else purchaseImportRepository.deletePurchaseDetails(sessionId(request), req.applicationId).map(_ => Ok)
         }
     }
   }
@@ -427,5 +451,34 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         val newSeq = req.updateSequenceNumber + 2
         logger.info(s"Stub updateApplicationDetails: applicationId=${req.applicationId}, newSeq=$newSeq")
         Ok(Json.toJson(UpdateApplicationDetailsResponse(newSeq)))
+    }
+  }
+
+  def deleteImport(): Action[AnyContent] = Action.async { implicit request =>
+    logger.info("Stub: deleteImport called")
+
+    request.body.asJson.flatMap(_.asOpt[DeleteImportRequest]) match {
+      case None => Future.successful(BadRequest("Invalid or missing request body"))
+      case Some(req) =>
+        val newSeq = req.updateSequenceNumber
+        logger.info(s"Stub deleteImport: applicationId=${req.applicationId}, itemNumber=${req.itemNumber}, newSeq=$newSeq")
+        purchaseImportRepository.deleteImport(sessionId(request), req.applicationId, req.itemNumber).map { _ =>
+          Ok(Json.obj("updateSequenceNumber" -> newSeq))
+        }
+    }
+  }
+
+  def deletePurchase: Action[AnyContent] = Action.async { implicit request =>
+    logger.info("Stub: deletePurchase called")
+
+    request.body.asJson.flatMap(_.asOpt[DeletePurchaseRequest]) match {
+      case None                               => Future.successful(BadRequest("Invalid or missing request body"))
+      case Some(req) if req.itemNumber == 500 => Future.successful(InternalServerError("Simulated database connectivity failure"))
+      case Some(req) =>
+        val newSeq = req.updateSequenceNumber + 1
+        logger.info(s"Stub deletePurchase: applicationId=${req.applicationId}, itemNumber=${req.itemNumber}, newSeq=$newSeq")
+        purchaseImportRepository.deletePurchase(sessionId(request), req.applicationId, req.itemNumber).map { _ =>
+          Ok(Json.toJson(DeletePurchaseResponse(newSeq)))
+        }
     }
   }
