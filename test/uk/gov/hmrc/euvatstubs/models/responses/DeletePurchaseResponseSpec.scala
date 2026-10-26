@@ -27,7 +27,7 @@ class DeletePurchaseResponseSpec extends AnyWordSpec with Matchers {
       val response = DeletePurchaseResponse(updateSequenceNumber = 2)
       val json = Json.obj("updateSequenceNumber" -> 2)
 
-      Json.toJson(response) shouldBe json
+      Json.toJson(response)           shouldBe json
       json.as[DeletePurchaseResponse] shouldBe response
     }
 
