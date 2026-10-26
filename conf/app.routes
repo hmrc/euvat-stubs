@@ -16,3 +16,4 @@ GET        /get-import-details/:applicationId/:itemNumber    uk.gov.hmrc.euvatst
 DELETE     /delete-purchase                                  uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.deletePurchase
 POST       /get-sad-reference-count                          uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getSadReferenceCount
 DELETE     /delete-import                                    uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.deleteImport()
+POST       /get-reference-information-count                  uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getReferenceInformationCount
