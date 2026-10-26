@@ -13,3 +13,4 @@ POST       /get-purchases-and-imports                        uk.gov.hmrc.euvatst
 DELETE     /delete-application                               uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.deleteApplication
 PUT        /update-application-details                       uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.updateApplicationDetails
 GET        /get-import-details/:applicationId/:itemNumber    uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getImportDetails(applicationId: Long, itemNumber: Int)
+POST       /get-sad-reference-count                          uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getSadReferenceCount
