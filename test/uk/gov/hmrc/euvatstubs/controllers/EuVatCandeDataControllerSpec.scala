@@ -871,7 +871,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
 
     "return 400 when the request body is invalid" in {
-      val fakeRequest = FakeRequest("POST", "/get-supplier-vrn-count")
+      val fakeRequest = FakeRequest("POST", "/get-sad-reference-count")
         .withJsonBody(Json.obj("invalid" -> "body"))
         .withHeaders("Content-Type" -> "application/json")
 
