@@ -701,6 +701,90 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
   }
 
+  "EuVatCandeDataController.updateImportDetails" should {
+
+    def requestWith(json: JsObject) =
+      FakeRequest("PUT", "/update-importation-details")
+        .withJsonBody(json)
+        .withHeaders("Content-Type" -> "application/json")
+
+    val fullJson = Json.obj(
+      "applicationId"               -> 404,
+      "itemNumber"                  -> 4,
+      "goodsDescriptionCategory"    -> "10",
+      "goodsDescriptionSubCategory" -> "10.4.1",
+      "goodsDescriptionText"        -> "office stationery and consumables",
+      "hasSadReferenceNumber"       -> "Y",
+      "sadReferenceNumber"          -> "SAD123456789",
+      "referenceInformation"        -> "Import declaration reference",
+      "supplierName"                -> "Finnish International",
+      "supplierAddressLine1"        -> "356 High Street",
+      "supplierAddressLine2"        -> "Rochdale",
+      "supplierAddressLine3"        -> "England",
+      "supplierCountryCode"         -> "GB",
+      "issuingDate"                 -> "2026-05-14T00:00:00",
+      "currencyCode"                -> "EUR",
+      "taxableAmount"               -> 1000,
+      "vatAmount"                   -> 99,
+      "deductibleVatAmount"         -> 40,
+      "updateSequenceNumber"        -> 1
+    )
+
+    "return 200 with updateSequenceNumber + 1" in {
+      val result = controller.updateImportDetails()(requestWith(fullJson))
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.obj("updateSequenceNumber" -> 2)
+    }
+
+    "return 200 when only the mandatory fields are supplied" in {
+      val mandatoryJson = Json.obj(
+        "applicationId"            -> 404,
+        "itemNumber"               -> 4,
+        "goodsDescriptionCategory" -> "10",
+        "updateSequenceNumber"     -> 7
+      )
+
+      val result = controller.updateImportDetails()(requestWith(mandatoryJson))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 8
+    }
+
+    "simulate a database connectivity failure when applicationId ends with 500" in {
+      val result = controller.updateImportDetails()(requestWith(fullJson + ("applicationId" -> JsNumber(1500))))
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+
+    "return 400 when applicationId is 0" in {
+      val result = controller.updateImportDetails()(requestWith(fullJson + ("applicationId" -> JsNumber(0))))
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return 400 when itemNumber is 0" in {
+      val result = controller.updateImportDetails()(requestWith(fullJson + ("itemNumber" -> JsNumber(0))))
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return 400 when a mandatory field is missing" in {
+      val result = controller.updateImportDetails()(requestWith(fullJson - "goodsDescriptionCategory"))
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return 400 when no JSON body is provided" in {
+      val fakeRequest = FakeRequest("PUT", "/update-importation-details")
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.updateImportDetails()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+  }
+
   "EuVatCandeDataController.getPurchaseImportList" should {
     def fakeRequest(appId: Long) = FakeRequest("GET", "/get-purchases-and-imports")
       .withJsonBody(Json.obj("applicationId" -> appId))
