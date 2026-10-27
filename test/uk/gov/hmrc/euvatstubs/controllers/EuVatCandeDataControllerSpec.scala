@@ -915,4 +915,95 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       status(result) mustBe BAD_REQUEST
     }
   }
+
+  "EuVatCandeDataController.deletePurchase" should {
+
+    def requestWith(json: JsObject) =
+      FakeRequest("DELETE", "/rds-cande-proxy/delete-purchase")
+        .withJsonBody(json)
+        .withHeaders("Content-Type" -> "application/json")
+
+    val validJson = Json.obj(
+      "applicationId"        -> 123456L,
+      "itemNumber"           -> 4,
+      "updateSequenceNumber" -> 7
+    )
+
+    "return updateSequenceNumber + 1 for a valid delete request" in {
+      val result = controller.deletePurchase()(requestWith(validJson))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 8
+    }
+
+    "return 500 when backend failure is simulated with itemNumber 500" in {
+      val result = controller.deletePurchase()(requestWith(validJson + ("itemNumber" -> JsNumber(500))))
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+
+    "return 400 when a mandatory field is missing" in {
+      val result = controller.deletePurchase()(requestWith(validJson - "itemNumber"))
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return 400 when no JSON body provided" in {
+      val fakeRequest = FakeRequest("DELETE", "/rds-cande-proxy/delete-purchase")
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.deletePurchase()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+  }
+
+  "EuVatCandeDataController.getSadReferenceCount" should {
+    def requestWith(sadReferenceNumber: String) =
+      FakeRequest("POST", "/get-sad-reference-count")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"      -> 133,
+            "itemNumber"         -> 4,
+            "sadReferenceNumber" -> sadReferenceNumber
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+    "return a duplicate count of 1 for a SAD reference number ending with 111" in {
+      val result = controller.getSadReferenceCount()(requestWith("500000111"))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "duplicateCount").as[Int] mustBe 1
+    }
+
+    "return a duplicate count of 2 for a SAD reference number ending with 222" in {
+      val result = controller.getSadReferenceCount()(requestWith("500000222"))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "duplicateCount").as[Int] mustBe 2
+    }
+
+    "return a duplicate count of 0 for any other SAD reference number" in {
+      val result = controller.getSadReferenceCount()(requestWith("500000881"))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "duplicateCount").as[Int] mustBe 0
+    }
+
+    "return 500 for a SAD reference number ending with 500" in {
+      val result = controller.getSadReferenceCount()(requestWith("500000500"))
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+
+    "return 400 when the request body is invalid" in {
+      val fakeRequest = FakeRequest("POST", "/get-sad-reference-count")
+        .withJsonBody(Json.obj("invalid" -> "body"))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.getSadReferenceCount()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+  }
 }
