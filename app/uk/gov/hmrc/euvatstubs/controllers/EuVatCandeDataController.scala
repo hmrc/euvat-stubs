@@ -379,7 +379,11 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         case _ =>
           val response: List[PurchaseImport] =
             request.applicationId match {
-              case 111 => List(purchaseImport)
+              case 111 =>
+                List(
+                  purchaseImport,
+                  purchaseImport.copy(itemType = "I", itemNumber = 2, deductibleVatAmount = 0)
+                )
               case 999 => List(purchaseImport.copy(itemType = "I", itemNumber = 2, deductibleVatAmount = 0))
               case 402 =>
                 List(
@@ -390,7 +394,11 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
                   purchaseImport.copy(goodsDescriptionCategory = "10", itemType  = "I", itemNumber        = 6, deductibleVatAmount = 0),
                   purchaseImport.copy(goodsDescriptionCategory = "9", itemNumber = 3, deductibleVatAmount = 999)
                 )
-              case _ => List(purchaseImport.copy(goodsDescriptionCategory = "7", itemType = "P", itemNumber = 3, deductibleVatAmount = 111.11))
+              case _ =>
+                List(
+                  purchaseImport.copy(goodsDescriptionCategory = "7", itemType = "P", itemNumber = 3, deductibleVatAmount = 111.11),
+                  purchaseImport.copy(goodsDescriptionCategory = "7", itemType = "I", itemNumber = 4, deductibleVatAmount = 10)
+                )
             }
 
           Ok(Json.toJson(PurchaseImportListResponse(totalItems = response.size, purchaseImportList = response, totalVatClaims = BigDecimal(456.78))))
