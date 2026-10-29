@@ -714,7 +714,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       "goodsDescriptionCategory"    -> "10",
       "goodsDescriptionSubCategory" -> "10.4.1",
       "goodsDescriptionText"        -> "office stationery and consumables",
-      "hasSadReferenceNumber"       -> true,
+      "hasSadReferenceNumber"       -> "true",
       "sadReferenceNumber"          -> "SAD123456789",
       "referenceInformation"        -> "Import declaration reference",
       "supplierName"                -> "Finnish International",
