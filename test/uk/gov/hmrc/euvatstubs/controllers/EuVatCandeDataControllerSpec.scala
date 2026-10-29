@@ -706,6 +706,15 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       .withJsonBody(Json.obj("applicationId" -> appId))
       .withHeaders("Content-Type" -> "application/json")
 
+    "return one purchase and one import" in {
+      val result = controller.getPurchaseImportList()(fakeRequest(111))
+      status(result) mustBe OK
+
+      val json = contentAsJson(result)
+      (json \ "totalItems").as[Int] mustBe 2
+      (json \ "purchaseImportList").as[Seq[JsObject]].map(item => (item \ "itemType").as[String]) must contain theSameElementsAs Seq("P", "I")
+    }
+
     "return purchase import list with 1 item" in {
       val result = controller.getPurchaseImportList()(fakeRequest(999))
       status(result) mustBe OK
@@ -714,12 +723,13 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       (json \ "totalItems").as[Int] mustBe 1
     }
 
-    "return purchase import list with 3 items" in {
+    "return one purchase and one import for other application IDs" in {
       val result = controller.getPurchaseImportList()(fakeRequest(23))
       status(result) mustBe OK
 
       val json = contentAsJson(result)
-      (json \ "totalItems").as[Int] mustBe 1
+      (json \ "totalItems").as[Int] mustBe 2
+      (json \ "purchaseImportList").as[Seq[JsObject]].map(item => (item \ "itemType").as[String]) must contain theSameElementsAs Seq("P", "I")
     }
 
     "return BadRequest for invalid appId" in {
