@@ -504,3 +504,45 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
 
     Ok(Json.toJson(ReferenceInfoCountResponse(0)))
   }
+
+  private def applicationDetails(applicationId: Long): ApplicationDetails =
+    ApplicationDetails(
+      applicationId              = applicationId,
+      applicationNumber          = Some("GB123456789012345"),
+      refundingCountryCode       = Some("LV"),
+      applicationVersion         = Some(LocalDateTime.of(2009, 2, 1, 0, 0, 0, 0)),
+      periodStartDate            = Some(LocalDateTime.of(2011, 6, 1, 0, 0, 0, 0)),
+      periodEndDate              = Some(LocalDateTime.of(2011, 10, 31, 23, 59, 59, 999000000)),
+      applicantVatRegNumber      = Some("GB123456789"),
+      applicantEmailAddress      = Some("applicant@example.com"),
+      applicantTelephoneNumber   = Some("01952233248"),
+      representativeId           = Some("REP123456"),
+      representativeIdType       = Some("VAT"),
+      representativeCountry      = Some("GB"),
+      representativeEmailAddress = Some("representative@example.com"),
+      representativeTelephoneNum = Some("01952233249"),
+      applicationLanguage        = Some("en"),
+      bankAccountOwnerName       = Some("Example Applicant"),
+      bankAccountOwnerType       = Some("B"),
+      ibanCode                   = Some("GB29NWBK60161331926819"),
+      bicCode                    = Some("NWBKGB2L"),
+      bankAccountCurrencyCode    = Some("EUR"),
+      businessActivityCode1      = Some("2345"),
+      businessActivityCode2      = Some("6789"),
+      businessActivityCode3      = Some("1234"),
+      messageId                  = Some("MSG123456"),
+      correlationId              = Some("COR123456"),
+      cipherText                 = Some("stub-cipher-text"),
+      encryptionStatus           = Some("N"),
+      updateSeqNumber            = 30,
+      applicationStatus          = Some("D"),
+      submissionStatus           = Some("S")
+    )
+
+  def getApplicationDetails(applicationId: Long): Action[AnyContent] = Action { implicit request =>
+    logger.info(s"Stub: returning application for submission: $applicationId")
+
+    if (applicationId % 1000 == 400) BadRequest("Simulated invalid application request")
+    else if (applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
+    else Ok(Json.toJson(ApplicationDetailsResponse(List(applicationDetails(applicationId)))))
+  }

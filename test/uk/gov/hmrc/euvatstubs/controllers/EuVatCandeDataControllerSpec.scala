@@ -89,6 +89,45 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
   }
 
+  "EuVatCandeDataController.getApplicationDetails" should {
+    "return the requested application inside applicationDetails" in {
+      val fakeRequest = FakeRequest("GET", "/getApplicationDetails/133")
+
+      val result = controller.getApplicationDetails(133)(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+      val applicationDetails = (json \ "applicationDetails").as[JsArray]
+      applicationDetails.value must have size 1
+      (applicationDetails(0) \ "applicationId").as[Long] mustBe 133L
+      (applicationDetails(0) \ "applicationNumber").as[String] mustBe "GB123456789012345"
+      (applicationDetails(0) \ "refundingCountryCode").as[String] mustBe "LV"
+      (applicationDetails(0) \ "periodStartDate").as[String] mustBe "2011-06-01T00:00:00"
+      (applicationDetails(0) \ "periodEndDate").as[String] mustBe "2011-10-31T23:59:59.999"
+      (applicationDetails(0) \ "ibanCode").as[String] mustBe "GB29NWBK60161331926819"
+      (applicationDetails(0) \ "bicCode").as[String] mustBe "NWBKGB2L"
+      (applicationDetails(0) \ "updateSeqNumber").as[Int] mustBe 30
+      (applicationDetails(0) \ "applicationStatus").as[String] mustBe "D"
+      (applicationDetails(0) \ "submissionStatus").as[String] mustBe "S"
+    }
+
+    "return 400 when the application ID ends with 400" in {
+      val fakeRequest = FakeRequest("GET", "/getApplicationDetails/1400")
+
+      val result = controller.getApplicationDetails(1400)(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return 500 when the application ID ends with 500" in {
+      val fakeRequest = FakeRequest("GET", "/getApplicationDetails/1500")
+
+      val result = controller.getApplicationDetails(1500)(fakeRequest)
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+  }
+
   "EuVatCandeDataController.getLatestApplications" should {
     "return a valid Application when country and dates overlap" in {
       val fakeRequest = FakeRequest("POST", "/get-latest-application")
