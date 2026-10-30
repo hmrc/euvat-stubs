@@ -239,6 +239,23 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     else Ok(Json.toJson(importDetailsResponse.copy(applicationId = applicationId, itemNumber = itemNumber)))
   }
 
+  def updateImportDetails: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: updateImportDetails called")
+
+    request.body.asJson.flatMap(_.asOpt[UpdateImportDetailsRequest]) match {
+      case None => BadRequest("Invalid or missing request body")
+      // Simulate backend/database connectivity failure when applicationId ends with 500
+      case Some(req) if req.applicationId % 1000 == 500 => InternalServerError("Simulated database connectivity failure")
+      case Some(req) if req.applicationId <= 0 || req.itemNumber <= 0 =>
+        BadRequest(s"Invalid applicationId or itemNumber: applicationId=${req.applicationId} itemNumber=${req.itemNumber}")
+      case Some(req) =>
+        // mimic the proxy: the update stored procedure bumps the sequence number by 1
+        val newSeq = req.updateSequenceNumber + 1
+        logger.info(s"Stub updateImportDetails: applicationId=${req.applicationId}, itemNumber=${req.itemNumber}, newSeq=$newSeq")
+        Ok(Json.toJson(UpdateImportDetailsResponse(newSeq)))
+    }
+  }
+
   def getSupplierTaxIdentifierCount: Action[AnyContent] = Action { implicit request =>
     logger.info("Stub: returning SupplierTaxIdentifierCount")
 
