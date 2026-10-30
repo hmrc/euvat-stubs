@@ -1046,4 +1046,35 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       status(result) mustBe BAD_REQUEST
     }
   }
+
+  "EuVatCandeDataController.getReferenceInformationCount" should {
+
+    def requestWith(json: JsObject) =
+      FakeRequest("POST", "/rds-cande-proxy/get-reference-information-count")
+        .withJsonBody(json)
+        .withHeaders("Content-Type" -> "application/json")
+
+    val mandatoryJson = Json.obj(
+      "applicationId" -> 133,
+      "itemNumber"    -> 0
+    )
+
+    "return 200 with reference info count 0 when given itemNumber not = 4" in {
+      val result = controller.getReferenceInformationCount()(
+        requestWith(mandatoryJson)
+      )
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "count").as[Int] mustBe 0
+    }
+
+    "return 200 with reference info count 1 when given itemNumber is 4" in {
+      val result = controller.getReferenceInformationCount()(
+        requestWith(mandatoryJson + ("itemNumber" -> JsNumber(BigDecimal("4"))))
+      )
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "count").as[Int] mustBe 1
+    }
+  }
 }
