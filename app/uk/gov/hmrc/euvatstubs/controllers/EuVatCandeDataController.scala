@@ -498,3 +498,9 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         Ok(Json.obj("updateSequenceNumber" -> newSeq))
     }
   }
+
+  def getReferenceInformationCount: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: getReferenceInformationCount called")
+
+    Ok(Json.toJson(ReferenceInfoCountResponse(0)))
+  }
