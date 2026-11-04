@@ -28,7 +28,7 @@ class GetPurchaseDetailsResponseSpec extends AnyWordSpec with Matchers {
     goodsDescriptionCode       = "1",
     goodsDescriptionSubCode    = Some("1.1"),
     goodsDescriptionText       = Some("Fuel"),
-    simplifiedInvoiceIndicator = Some("N"),
+    simplifiedInvoiceIndicator = Some("false"),
     supplierName               = Some("Supplier Ltd"),
     supplierAddressLine1       = Some("1 High Street"),
     supplierAddressLine2       = Some("Riga"),
