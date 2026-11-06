@@ -36,7 +36,7 @@ class GetImportDetailsResponseSpec extends AnyWordSpec with Matchers {
     goodsDescriptionCategory    = "10",
     goodsDescriptionSubcategory = Some("10.4.1"),
     goodsDescriptionText        = Some(""),
-    hasSadReferenceNumber       = Some("Y"),
+    hasSadReferenceNumber       = Some("true"),
     sadReferenceNumber          = Some("SAD123456789"),
     referenceInformation        = Some("Import declaration reference"),
     currencyCode                = Some("EUR"),
