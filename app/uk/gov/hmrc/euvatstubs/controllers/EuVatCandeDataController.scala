@@ -179,22 +179,22 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
   }
 
   private val purchaseDetailsResponse: GetPurchaseDetailsResponse = GetPurchaseDetailsResponse(
-    goodsDescriptionCode       = "1",
-    goodsDescriptionSubCode    = Some("1.1"),
-    goodsDescriptionText       = Some("Fuel"),
+    goodsDescriptionCode       = "7",
+    goodsDescriptionSubCode    = Some("7.1"),
+    goodsDescriptionText       = Some("The taxable person"),
     simplifiedInvoiceIndicator = Some("N"),
-    supplierName               = Some("Supplier Ltd"),
-    supplierAddressLine1       = Some("1 High Street"),
-    supplierAddressLine2       = Some("Riga"),
+    supplierName               = Some("Test Supplier Name"),
+    supplierAddressLine1       = Some("Test address one"),
+    supplierAddressLine2       = Some("Test address two"),
     supplierAddressLine3       = None,
-    supplierVatNumber          = Some("LV40003567907"),
+    supplierVatNumber          = Some("EE0000000111"),
     supplierTaxIdentifier      = None,
-    invoiceDate                = Some(LocalDateTime.of(2026, 3, 15, 0, 0)),
-    invoiceNumber              = Some("INV-001"),
+    invoiceDate                = Some(LocalDateTime.of(2025, 12, 8, 0, 0)),
+    invoiceNumber              = Some("1234567890"),
     currencyCode               = Some("EUR"),
-    taxableAmount              = Some(BigDecimal("100.50")),
-    vatAmount                  = Some(BigDecimal("21.10")),
-    deductibleVatAmount        = Some(BigDecimal("21.10")),
+    taxableAmount              = Some(BigDecimal("1000.01")),
+    vatAmount                  = Some(BigDecimal("200.01")),
+    deductibleVatAmount        = Some(BigDecimal("100.01")),
     updateSequenceNumber       = 1
   )
 
