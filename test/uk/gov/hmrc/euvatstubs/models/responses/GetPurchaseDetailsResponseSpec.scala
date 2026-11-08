@@ -27,7 +27,7 @@ class GetPurchaseDetailsResponseSpec extends AnyWordSpec with Matchers {
   private val fullResponse = GetPurchaseDetailsResponse(
     goodsDescriptionCode       = "7",
     goodsDescriptionSubCode    = Some("7.1"),
-    goodsDescriptionText       = Some("The taxable person"),
+    goodsDescriptionText       = Some(""),
     simplifiedInvoiceIndicator = Some("N"),
     supplierName               = Some("Test Supplier Name"),
     supplierAddressLine1       = Some("Test address one"),
