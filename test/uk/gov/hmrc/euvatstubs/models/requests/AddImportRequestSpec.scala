@@ -41,7 +41,7 @@ class AddImportRequestSpec extends AnyWordSpec with Matchers {
         vatAmount                   = Some(BigDecimal("21.10")),
         deductibleVatAmount         = Some(BigDecimal("21.10")),
         updateDateTime              = Some(LocalDateTime.of(2025, 3, 16, 12, 0)),
-        hasSadReferenceNumber       = Some("N"),
+        hasSadReferenceNumber       = Some("false"),
         sadReferenceNumber          = None,
         referenceInformation        = None,
         goodsDescriptionText        = Some("Fuel"),
