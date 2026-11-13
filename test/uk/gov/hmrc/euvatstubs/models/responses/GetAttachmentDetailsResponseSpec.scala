@@ -48,7 +48,7 @@ class GetAttachmentDetailsResponseSpec extends AnyWordSpec with Matchers {
       )
 
       Json.toJson(minimal) shouldBe Json.obj(
-        "attachmentNumber" -> 11,
+        "attachmentNumber"     -> 11,
         "updateSequenceNumber" -> 10
       )
       Json.toJson(minimal).as[GetAttachmentDetailsResponse] shouldBe minimal
