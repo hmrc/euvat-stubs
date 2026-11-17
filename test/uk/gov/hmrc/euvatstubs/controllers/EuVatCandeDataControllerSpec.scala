@@ -1117,4 +1117,39 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       (contentAsJson(result) \ "count").as[Int] mustBe 0
     }
   }
+
+  "EuVatCandeDataController.getAttachmentDetails" should {
+    "return attachment details for valid request" in {
+      val fakeRequest = FakeRequest("GET", "/rds-cande-proxy/get-attachment-details/404/4")
+
+      val result = controller.getAttachmentDetails(404L, 4)(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+
+      (json \ "attachmentNumber").as[Int] mustBe 4
+      (json \ "fileName").asOpt[String] mustBe Some("test.pdf")
+      (json \ "fileType").asOpt[String] mustBe Some("pdf")
+      (json \ "fileDescription").asOpt[String] mustBe Some("pdf file attached")
+      (json \ "fileSize").asOpt[Int] mustBe Some(42)
+      (json \ "updateSequenceNumber").as[Int] mustBe 10
+    }
+
+    "simulate 5xx and return 500 for applicationId ending with 500" in {
+      val fakeRequest = FakeRequest("GET", "/rds-cande-proxy/get-attachment-details/500/4")
+
+      val result = controller.getAttachmentDetails(500L, 4)(fakeRequest)
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+
+    "simulate 5xx and return 500 for attachmentNumber is 500" in {
+      val fakeRequest = FakeRequest("GET", "/rds-cande-proxy/get-attachment-details/404/500")
+
+      val result = controller.getAttachmentDetails(404L, 500)(fakeRequest)
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+  }
+
 }

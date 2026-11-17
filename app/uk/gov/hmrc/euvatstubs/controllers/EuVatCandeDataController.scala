@@ -546,3 +546,22 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     else if (applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
     else Ok(Json.toJson(ApplicationDetailsResponse(List(applicationDetails(applicationId)))))
   }
+
+  private val getAttachmentDetailsResponse: GetAttachmentDetailsResponse = GetAttachmentDetailsResponse(
+    attachmentNumber     = 11,
+    fileName             = Some("test.pdf"),
+    fileType             = Some("pdf"),
+    fileDescription      = Some("pdf file attached"),
+    fileSize             = Some(42),
+    updateSequenceNumber = 10
+  )
+
+  def getAttachmentDetails(applicationId: Long, attachmentNumber: Int): Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: returning attachment details")
+
+    // Simulate backend/database connectivity failure when applicationId ends with 500
+    if (applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
+    else if (attachmentNumber == 500)
+      InternalServerError(s"No attachment found for the requested applicationId: $applicationId, attachmentNumber: $attachmentNumber")
+    else Ok(Json.toJson(getAttachmentDetailsResponse.copy(attachmentNumber = attachmentNumber)))
+  }
