@@ -208,26 +208,26 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
   }
 
   private val importDetailsResponse: GetImportDetailsResponse = GetImportDetailsResponse(
-    applicationId               = 404,
-    itemNumber                  = 4,
-    issuingDate                 = Some(LocalDateTime.of(2026, 1, 1, 0, 0)),
-    supplierName                = Some("Test Supplier"),
-    supplierAddressLine1        = Some("Test address one"),
-    supplierAddressLine2        = Some("Test address two"),
-    supplierAddressLine3        = Some("Test address three"),
-    supplierCountryCode         = Some("HM"),
-    goodsDescriptionCategory    = "7",
-    goodsDescriptionSubcategory = Some("7.1.1"),
-    goodsDescriptionText        = Some(""),
-    hasSadReferenceNumber       = Some("Y"),
-    sadReferenceNumber          = Some("SAD123456789"),
-    referenceInformation        = Some("Import declaration reference"),
-    currencyCode                = Some("EUR"),
-    taxableAmount               = Some(BigDecimal("1000.01")),
-    vatAmount                   = Some(BigDecimal("2000.01")),
-    deductibleVatAmount         = Some(BigDecimal("2500.01")),
-    updateSequenceNumber        = 1,
-    periodStartDate             = LocalDateTime.of(2026, 1, 1, 0, 0)
+    applicationId           = 404,
+    itemNumber              = 4,
+    issuingDate             = Some(LocalDateTime.of(2026, 1, 1, 0, 0)),
+    supplierName            = Some("Test Supplier"),
+    supplierAddressLine1    = Some("Test address one"),
+    supplierAddressLine2    = Some("Test address two"),
+    supplierAddressLine3    = Some("Test address three"),
+    supplierCountryCode     = Some("HM"),
+    goodsDescriptionCode    = "7",
+    goodsDescriptionSubCode = Some("7.1.1"),
+    goodsDescriptionText    = Some(""),
+    hasSadReferenceNumber   = Some("Y"),
+    sadReferenceNumber      = Some("SAD123456789"),
+    referenceInformation    = Some("Import declaration reference"),
+    currencyCode            = Some("EUR"),
+    taxableAmount           = Some(BigDecimal("1000.01")),
+    vatAmount               = Some(BigDecimal("2000.01")),
+    deductibleVatAmount     = Some(BigDecimal("2500.01")),
+    updateSequenceNumber    = 1,
+    periodStartDate         = LocalDateTime.of(2026, 1, 1, 0, 0)
   )
 
   def getImportDetails(applicationId: Long, itemNumber: Int): Action[AnyContent] = Action { implicit request =>
@@ -310,11 +310,11 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
               case Some(req) => Ok(Json.obj("updateSequenceNumber" -> req.updateSequenceNumber))
               case None =>
                 val applicationIdOpt: Option[Long] = (json \ "applicationId").asOpt[Long]
-                val goodsDescriptionCategoryOpt: Option[String] = (json \ "goodsDescriptionCategory").asOpt[String]
+                val goodsDescriptionCategoryOpt: Option[String] = (json \ "goodsDescriptionCode").asOpt[String]
                 val goodsDescriptionTextOpt: Option[String] = (json \ "goodsDescriptionText").asOpt[String]
-                val purchaseSubcategoryOpt: Option[String] = (json \ "goodsDescriptionSubCategory")
+                val purchaseSubcategoryOpt: Option[String] = (json \ "goodsDescriptionSubCode")
                   .asOpt[String]
-                  .orElse((json \ "purchaseSubcategory").asOpt[String])
+                  .orElse((json \ "goodsDescriptionSubCode").asOpt[String])
                 val simplifiedInvoiceIndicatorOpt = (json \ "simplifiedInvoiceIndicator").asOpt[String]
                 val supplierNameOpt = (json \ "supplierName").asOpt[String]
                 val supplierAddress1Opt = (json \ "supplierAddressLine1")
@@ -346,25 +346,25 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
                 (applicationIdOpt, goodsDescriptionCategoryOpt, updateSequenceNumberOpt) match {
                   case (Some(applicationId), Some(goodsDescriptionCategory), Some(updateSeq)) =>
                     val req = UpdatePurchaseDetailsRequest(
-                      applicationId               = applicationId,
-                      itemNumber                  = itemNumberOpt.getOrElse(0),
-                      goodsDescriptionCategory    = goodsDescriptionCategory,
-                      goodsDescriptionSubCategory = purchaseSubcategoryOpt,
-                      goodsDescriptionText        = goodsDescriptionTextOpt,
-                      simplifiedInvoiceIndicator  = simplifiedInvoiceIndicatorOpt,
-                      supplierName                = supplierNameOpt,
-                      supplierAddress1            = supplierAddress1Opt,
-                      supplierAddress2            = supplierAddress2Opt,
-                      supplierAddress3            = supplierAddress3Opt,
-                      supplierVatRegNumber        = supplierVatRegNumberOpt,
-                      supplierTaxIdentifier       = supplierTaxIdentifierOpt,
-                      invoiceDate                 = invoiceDateOpt,
-                      invoiceNumber               = invoiceNumberOpt,
-                      currencyCode                = currencyCodeOpt,
-                      taxableAmount               = taxableAmountOpt,
-                      vatAmount                   = vatAmountOpt,
-                      deductibleVatAmount         = deductibleVatAmountOpt,
-                      updateSequenceNumber        = updateSeq
+                      applicationId              = applicationId,
+                      itemNumber                 = itemNumberOpt.getOrElse(0),
+                      goodsDescriptionCode       = goodsDescriptionCategory,
+                      goodsDescriptionSubCode    = purchaseSubcategoryOpt,
+                      goodsDescriptionText       = goodsDescriptionTextOpt,
+                      simplifiedInvoiceIndicator = simplifiedInvoiceIndicatorOpt,
+                      supplierName               = supplierNameOpt,
+                      supplierAddress1           = supplierAddress1Opt,
+                      supplierAddress2           = supplierAddress2Opt,
+                      supplierAddress3           = supplierAddress3Opt,
+                      supplierVatRegNumber       = supplierVatRegNumberOpt,
+                      supplierTaxIdentifier      = supplierTaxIdentifierOpt,
+                      invoiceDate                = invoiceDateOpt,
+                      invoiceNumber              = invoiceNumberOpt,
+                      currencyCode               = currencyCodeOpt,
+                      taxableAmount              = taxableAmountOpt,
+                      vatAmount                  = vatAmountOpt,
+                      deductibleVatAmount        = deductibleVatAmountOpt,
+                      updateSequenceNumber       = updateSeq
                     )
 
                     Ok(Json.obj("updateSequenceNumber" -> req.updateSequenceNumber))
@@ -377,14 +377,14 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
   }
 
   private val purchaseImport: PurchaseImport = PurchaseImport(
-    itemNumber                  = 1,
-    itemType                    = "P",
-    goodsDescriptionCategory    = "1",
-    goodsDescriptionSubCategory = Some("1.2"),
-    currencyCode                = "DE",
-    taxableAmount               = 333,
-    vatAmount                   = 222,
-    deductibleVatAmount         = 111.11
+    itemNumber              = 1,
+    itemType                = "P",
+    goodsDescriptionCode    = "1",
+    goodsDescriptionSubCode = Some("1.2"),
+    currencyCode            = "DE",
+    taxableAmount           = 333,
+    vatAmount               = 222,
+    deductibleVatAmount     = 111.11
   )
 
   def getPurchaseImportList: Action[AnyContent] = Action { implicit request =>
@@ -404,17 +404,17 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
               case 999 => List(purchaseImport.copy(itemType = "I", itemNumber = 2, deductibleVatAmount = 0))
               case 402 =>
                 List(
-                  purchaseImport.copy(goodsDescriptionCategory = "3", itemType = "I", itemNumber = 4, deductibleVatAmount = 0),
+                  purchaseImport.copy(goodsDescriptionCode = "3", itemType = "I", itemNumber = 4, deductibleVatAmount = 0),
                   purchaseImport,
-                  purchaseImport.copy(goodsDescriptionCategory = "7", itemType   = "P", itemNumber        = 5, deductibleVatAmount = 0),
-                  purchaseImport.copy(goodsDescriptionCategory = "9", itemNumber = 2, deductibleVatAmount = 123.45),
-                  purchaseImport.copy(goodsDescriptionCategory = "10", itemType  = "I", itemNumber        = 6, deductibleVatAmount = 0),
-                  purchaseImport.copy(goodsDescriptionCategory = "9", itemNumber = 3, deductibleVatAmount = 999)
+                  purchaseImport.copy(goodsDescriptionCode = "7", itemType   = "P", itemNumber        = 5, deductibleVatAmount = 0),
+                  purchaseImport.copy(goodsDescriptionCode = "9", itemNumber = 2, deductibleVatAmount = 123.45),
+                  purchaseImport.copy(goodsDescriptionCode = "10", itemType  = "I", itemNumber        = 6, deductibleVatAmount = 0),
+                  purchaseImport.copy(goodsDescriptionCode = "9", itemNumber = 3, deductibleVatAmount = 999)
                 )
               case _ =>
                 List(
-                  purchaseImport.copy(goodsDescriptionCategory = "7", itemType = "P", itemNumber = 3, deductibleVatAmount = 111.11),
-                  purchaseImport.copy(goodsDescriptionCategory = "7", itemType = "I", itemNumber = 4, deductibleVatAmount = 10)
+                  purchaseImport.copy(goodsDescriptionCode = "7", itemType = "P", itemNumber = 3, deductibleVatAmount = 111.11),
+                  purchaseImport.copy(goodsDescriptionCode = "7", itemType = "I", itemNumber = 4, deductibleVatAmount = 10)
                 )
             }
 

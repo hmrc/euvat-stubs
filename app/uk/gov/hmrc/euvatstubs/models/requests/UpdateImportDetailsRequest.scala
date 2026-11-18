@@ -23,8 +23,8 @@ import java.time.LocalDateTime
 case class UpdateImportDetailsRequest(
   applicationId: Long,
   itemNumber: Int,
-  goodsDescriptionCategory: String,
-  goodsDescriptionSubCategory: Option[String] = None,
+  goodsDescriptionCode: String,
+  goodsDescriptionSubCode: Option[String] = None,
   goodsDescriptionText: Option[String] = None,
   hasSadReferenceNumber: Option[String] = None,
   sadReferenceNumber: Option[String] = None,

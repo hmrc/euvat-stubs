@@ -28,25 +28,25 @@ class AddImportRequestSpec extends AnyWordSpec with Matchers {
 
     "serialize and deserialize a fully populated request" in {
       val req = AddImportRequest(
-        applicationId               = 123456L,
-        issuingDate                 = Some(LocalDateTime.of(2025, 3, 15, 0, 0)),
-        supplierName                = Some("Supplier Ltd"),
-        supplierAddressLine1        = Some("1 High Street"),
-        supplierAddressLine2        = Some("Riga"),
-        supplierAddressLine3        = None,
-        supplierCountryCode         = Some("LV"),
-        goodsDescriptionCategory    = "1",
-        currencyCode                = Some("EUR"),
-        taxableAmount               = Some(BigDecimal("100.50")),
-        vatAmount                   = Some(BigDecimal("21.10")),
-        deductibleVatAmount         = Some(BigDecimal("21.10")),
-        updateDateTime              = Some(LocalDateTime.of(2025, 3, 16, 12, 0)),
-        hasSadReferenceNumber       = Some("false"),
-        sadReferenceNumber          = None,
-        referenceInformation        = None,
-        goodsDescriptionText        = Some("Fuel"),
-        goodsDescriptionSubcategory = Some("1.1"),
-        updateSequenceNumber        = 1
+        applicationId           = 123456L,
+        issuingDate             = Some(LocalDateTime.of(2025, 3, 15, 0, 0)),
+        supplierName            = Some("Supplier Ltd"),
+        supplierAddressLine1    = Some("1 High Street"),
+        supplierAddressLine2    = Some("Riga"),
+        supplierAddressLine3    = None,
+        supplierCountryCode     = Some("LV"),
+        goodsDescriptionCode    = "1",
+        currencyCode            = Some("EUR"),
+        taxableAmount           = Some(BigDecimal("100.50")),
+        vatAmount               = Some(BigDecimal("21.10")),
+        deductibleVatAmount     = Some(BigDecimal("21.10")),
+        updateDateTime          = Some(LocalDateTime.of(2025, 3, 16, 12, 0)),
+        hasSadReferenceNumber   = Some("false"),
+        sadReferenceNumber      = None,
+        referenceInformation    = None,
+        goodsDescriptionText    = Some("Fuel"),
+        goodsDescriptionSubCode = Some("1.1"),
+        updateSequenceNumber    = 1
       )
 
       Json.toJson(req).as[AddImportRequest] shouldBe req
@@ -54,10 +54,10 @@ class AddImportRequestSpec extends AnyWordSpec with Matchers {
 
     "deserialize when optional fields are absent" in {
       val json = Json.obj(
-        "applicationId"            -> 123456,
-        "itemNumber"               -> 0,
-        "goodsDescriptionCategory" -> "1",
-        "updateSequenceNumber"     -> 1
+        "applicationId"        -> 123456,
+        "itemNumber"           -> 0,
+        "goodsDescriptionCode" -> "1",
+        "updateSequenceNumber" -> 1
       )
 
       val result = json.as[AddImportRequest]
