@@ -566,6 +566,28 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     else Ok(Json.toJson(getAttachmentDetailsResponse.copy(attachmentNumber = attachmentNumber)))
   }
 
+  private val stubPdfBase64: String =
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAzMDAgMTQ0XSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA1MiA+PgpzdHJlYW0KQlQgL0YxIDE4IFRmIDQwIDcwIFRkIChFVSBWQVQgc3R1YiBhdHRhY2htZW50KSBUaiBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDM0MyAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQxMwolJUVPRgo="
+
+  private val getFullAttachmentDetailsResponse: GetFullAttachmentDetailsResponse = GetFullAttachmentDetailsResponse(
+    attachmentNumber     = 11,
+    fileName             = Some("test.pdf"),
+    fileType             = Some("pdf"),
+    fileDescription      = Some("pdf file attached"),
+    fileSize             = Some(596),
+    fileContent          = Some(stubPdfBase64),
+    updateSequenceNumber = 10
+  )
+
+  def getFullAttachmentDetails(applicationId: Long, attachmentNumber: Int): Action[AnyContent] = Action { implicit request =>
+    logger.info(s"Stub: returning full attachment details for applicationId: $applicationId, attachmentNumber: $attachmentNumber")
+
+    if (applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
+    else if (attachmentNumber == 500)
+      InternalServerError(s"No attachment found for the requested applicationId: $applicationId, attachmentNumber: $attachmentNumber")
+    else Ok(Json.toJson(getFullAttachmentDetailsResponse.copy(attachmentNumber = attachmentNumber)))
+  }
+
   def deleteAttachment: Action[AnyContent] = Action { implicit request =>
     logger.info("Stub: deleteAttachment called")
 
