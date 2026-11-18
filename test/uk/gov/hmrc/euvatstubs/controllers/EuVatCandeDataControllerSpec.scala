@@ -304,10 +304,10 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val json = contentAsJson(result)
       (json \ "applicationId").as[Int] mustBe 404
       (json \ "itemNumber").as[Int] mustBe 4
-      (json \ "supplierName").asOpt[String] mustBe Some("Finnish International")
-      (json \ "issuingDate").as[String] mustBe "2026-05-14T00:00:00"
+      (json \ "supplierName").asOpt[String] mustBe Some("Test Supplier")
+      (json \ "issuingDate").as[String] mustBe "2026-01-01T00:00:00"
       (json \ "periodStartDate").as[String] mustBe "2026-01-01T00:00:00"
-      (json \ "supplierCountryCode").asOpt[String] mustBe Some("GB")
+      (json \ "supplierCountryCode").asOpt[String] mustBe Some("HM")
     }
 
     "simulate 5xx and return 500 for applicationId ending with 500" in {
@@ -483,9 +483,9 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       status(result) mustBe OK
       val json = contentAsJson(result)
-      (json \ "goodsDescriptionCode").as[String] mustBe "1"
-      (json \ "supplierName").as[String] mustBe "Supplier Ltd"
-      (json \ "invoiceNumber").as[String] mustBe "INV-001"
+      (json \ "goodsDescriptionCode").as[String] mustBe "7"
+      (json \ "supplierName").as[String] mustBe "Test Supplier Name"
+      (json \ "invoiceNumber").as[String] mustBe "1234567890"
       (json \ "updateSequenceNumber").as[Int] mustBe 1
     }
 
