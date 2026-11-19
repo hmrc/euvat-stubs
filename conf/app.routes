@@ -22,3 +22,4 @@ GET        /get-application-details/:applicationId                            uk
 GET        /get-attachment-details/:applicationId/:attachmentNumber           uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getAttachmentDetails(applicationId: Long, attachmentNumber: Int)
 POST       /get-all-attachments                                               uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getAllAttachments
 GET        /get-full-attachment-details/:applicationId/:attachmentNumber      uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getFullAttachmentDetails(applicationId: Long, attachmentNumber: Int)
+DELETE     /delete-attachment                                                 uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.deleteAttachment
