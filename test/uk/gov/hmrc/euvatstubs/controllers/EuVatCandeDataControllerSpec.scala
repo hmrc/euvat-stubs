@@ -1152,4 +1152,46 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
   }
 
+  "EuVatCandeDataController.deleteAttachment" should {
+
+    def requestWith(json: JsObject) =
+      FakeRequest("DELETE", "/rds-cande-proxy/delete-attachment")
+        .withJsonBody(json)
+        .withHeaders("Content-Type" -> "application/json")
+
+    val validJson = Json.obj(
+      "applicationId"        -> 123456L,
+      "attachmentNumber"     -> 4,
+      "updateSequenceNumber" -> 7
+    )
+
+    "return updateSequenceNumber + 1 for a valid delete request" in {
+      val result = controller.deleteAttachment()(requestWith(validJson))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 8
+    }
+
+    "return 500 when backend failure is simulated with itemNumber 500" in {
+      val result = controller.deleteAttachment()(requestWith(validJson + ("attachmentNumber" -> JsNumber(500))))
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+
+    "return 400 when a mandatory field is missing" in {
+      val result = controller.deleteAttachment()(requestWith(validJson - "attachmentNumber"))
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return 400 when no JSON body provided" in {
+      val fakeRequest = FakeRequest("DELETE", "/rds-cande-proxy/delete-attachment")
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.deleteAttachment()(fakeRequest)
+
+      status(result) mustBe BAD_REQUEST
+    }
+  }
+
 }

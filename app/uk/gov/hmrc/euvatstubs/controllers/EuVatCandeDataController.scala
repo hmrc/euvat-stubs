@@ -565,3 +565,17 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
       InternalServerError(s"No attachment found for the requested applicationId: $applicationId, attachmentNumber: $attachmentNumber")
     else Ok(Json.toJson(getAttachmentDetailsResponse.copy(attachmentNumber = attachmentNumber)))
   }
+
+  def deleteAttachment: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: deleteAttachment called")
+
+    request.body.asJson.flatMap(_.asOpt[DeleteAttachmentRequest]) match {
+      case None                                     => BadRequest("Invalid or missing request body")
+      case Some(req) if req.attachmentNumber == 500 => InternalServerError("Simulated database connectivity failure")
+      case Some(req)                                =>
+        // mimic the proxy: deleteAttachment bumps seq by 1
+        val newSeq: Int = req.updateSequenceNumber + 1
+        logger.info(s"Stub deleteAttachment: applicationId=${req.applicationId}, attachmentNumber=${req.attachmentNumber}, newSeq=$newSeq")
+        Ok(Json.toJson(DeleteAttachmentResponse(newSeq)))
+    }
+  }
