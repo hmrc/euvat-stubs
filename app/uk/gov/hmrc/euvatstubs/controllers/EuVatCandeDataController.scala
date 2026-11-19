@@ -21,7 +21,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
 import uk.gov.hmrc.euvatstubs.models.requests.*
 import uk.gov.hmrc.euvatstubs.models.responses.*
-import uk.gov.hmrc.euvatstubs.models.{LatestApplication, PurchaseImport}
+import uk.gov.hmrc.euvatstubs.models.{Attachment, LatestApplication, PurchaseImport}
 import uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -564,6 +564,70 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     else if (attachmentNumber == 500)
       InternalServerError(s"No attachment found for the requested applicationId: $applicationId, attachmentNumber: $attachmentNumber")
     else Ok(Json.toJson(getAttachmentDetailsResponse.copy(attachmentNumber = attachmentNumber)))
+  }
+
+  private val attachment: Attachment = Attachment(
+    attachmentNumber = 1,
+    fileName         = Some("invoice.pdf"),
+    fileType         = Some("pdf"),
+    fileDescription  = Some("Invoice description"),
+    fileSize         = Some(1024)
+  )
+
+  def getAllAttachments: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: returning all attachments")
+
+    request.body.asJson.flatMap(_.validate[GetAllAttachmentsRequest].asOpt).fold(BadRequest("Invalid or missing request body")) { request =>
+      request.applicationId match {
+        case 0 => BadRequest(s"No attachments found for the requested applicationId: ${request.applicationId}")
+        // Simulate backend/database connectivity failure when applicationId ends with 500
+        case applicationId if applicationId % 1000 == 500 => InternalServerError("Simulated database connectivity failure")
+        case _ =>
+          val allAttachments: List[Attachment] =
+            request.applicationId match {
+              case 666 => List.empty
+              case 111 => List(attachment.copy(fileDescription = None))
+              case 402 =>
+                (1 to 12).toList.map { number =>
+                  attachment.copy(
+                    attachmentNumber = number,
+                    fileName         = Some(s"invoice-$number.pdf"),
+                    fileDescription  = Some(s"Invoice $number")
+                  )
+                }
+              case _ =>
+                List(
+                  attachment,
+                  attachment.copy(
+                    attachmentNumber = 2,
+                    fileName         = Some("fuel-receipt.jpg"),
+                    fileType         = Some("jpg"),
+                    fileDescription  = Some("Fuel receipt"),
+                    fileSize         = Some(2048)
+                  ),
+                  attachment.copy(
+                    attachmentNumber = 3,
+                    fileName         = Some("train-ticket.png"),
+                    fileType         = Some("png"),
+                    fileDescription  = None,
+                    fileSize         = Some(512)
+                  )
+                )
+            }
+
+          val startAt = request.startAt.getOrElse(0)
+          val maxNumber = request.maxNumber.getOrElse(10)
+
+          Ok(
+            Json.toJson(
+              GetAllAttachmentsResponse(
+                attachments      = allAttachments.slice(startAt, startAt + maxNumber),
+                totalAttachments = allAttachments.size
+              )
+            )
+          )
+      }
+    }
   }
 
   private val stubPdfBase64: String =
