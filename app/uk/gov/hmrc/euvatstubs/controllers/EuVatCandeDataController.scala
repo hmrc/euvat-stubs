@@ -181,7 +181,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
   private val purchaseDetailsResponse: GetPurchaseDetailsResponse = GetPurchaseDetailsResponse(
     goodsDescriptionCode       = "7",
     goodsDescriptionSubCode    = Some("7.1.1"),
-    goodsDescriptionText       = Some(""),
+    goodsDescriptionText       = None,
     simplifiedInvoiceIndicator = Some("N"),
     supplierName               = Some("Test Supplier Name"),
     supplierAddressLine1       = Some("Test address one"),
@@ -218,7 +218,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     supplierCountryCode     = Some("HM"),
     goodsDescriptionCode    = "7",
     goodsDescriptionSubCode = Some("7.1.1"),
-    goodsDescriptionText    = Some(""),
+    goodsDescriptionText    = None,
     hasSadReferenceNumber   = Some("Y"),
     sadReferenceNumber      = Some("SAD123456789"),
     referenceInformation    = Some("Import declaration reference"),
