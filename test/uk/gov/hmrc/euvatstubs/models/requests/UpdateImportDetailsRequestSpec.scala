@@ -25,47 +25,47 @@ import java.time.LocalDateTime
 class UpdateImportDetailsRequestSpec extends AnyWordSpec with Matchers {
 
   private val fullRequest = UpdateImportDetailsRequest(
-    applicationId               = 404,
-    itemNumber                  = 4,
-    goodsDescriptionCategory    = "10",
-    goodsDescriptionSubCategory = Some("10.4.1"),
-    goodsDescriptionText        = Some("office stationery and consumables"),
-    hasSadReferenceNumber       = Some("true"),
-    sadReferenceNumber          = Some("SAD123456789"),
-    referenceInformation        = Some("Import declaration reference"),
-    supplierName                = Some("Finnish International"),
-    supplierAddressLine1        = Some("356 High Street"),
-    supplierAddressLine2        = Some("Rochdale"),
-    supplierAddressLine3        = Some("England"),
-    supplierCountryCode         = Some("GB"),
-    issuingDate                 = Some(LocalDateTime.of(2026, 5, 14, 0, 0)),
-    currencyCode                = Some("EUR"),
-    taxableAmount               = Some(BigDecimal(1000)),
-    vatAmount                   = Some(BigDecimal(99)),
-    deductibleVatAmount         = Some(BigDecimal(40)),
-    updateSequenceNumber        = 1
+    applicationId           = 404,
+    itemNumber              = 4,
+    goodsDescriptionCode    = "10",
+    goodsDescriptionSubCode = Some("10.4.1"),
+    goodsDescriptionText    = Some("office stationery and consumables"),
+    hasSadReferenceNumber   = Some("true"),
+    sadReferenceNumber      = Some("SAD123456789"),
+    referenceInformation    = Some("Import declaration reference"),
+    supplierName            = Some("Finnish International"),
+    supplierAddressLine1    = Some("356 High Street"),
+    supplierAddressLine2    = Some("Rochdale"),
+    supplierAddressLine3    = Some("England"),
+    supplierCountryCode     = Some("GB"),
+    issuingDate             = Some(LocalDateTime.of(2026, 5, 14, 0, 0)),
+    currencyCode            = Some("EUR"),
+    taxableAmount           = Some(BigDecimal(1000)),
+    vatAmount               = Some(BigDecimal(99)),
+    deductibleVatAmount     = Some(BigDecimal(40)),
+    updateSequenceNumber    = 1
   )
 
   private val fullJson: JsObject = Json.obj(
-    "applicationId"               -> 404,
-    "itemNumber"                  -> 4,
-    "goodsDescriptionCategory"    -> "10",
-    "goodsDescriptionSubCategory" -> "10.4.1",
-    "goodsDescriptionText"        -> "office stationery and consumables",
-    "hasSadReferenceNumber"       -> "true",
-    "sadReferenceNumber"          -> "SAD123456789",
-    "referenceInformation"        -> "Import declaration reference",
-    "supplierName"                -> "Finnish International",
-    "supplierAddressLine1"        -> "356 High Street",
-    "supplierAddressLine2"        -> "Rochdale",
-    "supplierAddressLine3"        -> "England",
-    "supplierCountryCode"         -> "GB",
-    "issuingDate"                 -> "2026-05-14T00:00:00",
-    "currencyCode"                -> "EUR",
-    "taxableAmount"               -> 1000,
-    "vatAmount"                   -> 99,
-    "deductibleVatAmount"         -> 40,
-    "updateSequenceNumber"        -> 1
+    "applicationId"           -> 404,
+    "itemNumber"              -> 4,
+    "goodsDescriptionCode"    -> "10",
+    "goodsDescriptionSubCode" -> "10.4.1",
+    "goodsDescriptionText"    -> "office stationery and consumables",
+    "hasSadReferenceNumber"   -> "true",
+    "sadReferenceNumber"      -> "SAD123456789",
+    "referenceInformation"    -> "Import declaration reference",
+    "supplierName"            -> "Finnish International",
+    "supplierAddressLine1"    -> "356 High Street",
+    "supplierAddressLine2"    -> "Rochdale",
+    "supplierAddressLine3"    -> "England",
+    "supplierCountryCode"     -> "GB",
+    "issuingDate"             -> "2026-05-14T00:00:00",
+    "currencyCode"            -> "EUR",
+    "taxableAmount"           -> 1000,
+    "vatAmount"               -> 99,
+    "deductibleVatAmount"     -> 40,
+    "updateSequenceNumber"    -> 1
   )
 
   "UpdateImportDetailsRequest JSON format" should {
@@ -80,17 +80,17 @@ class UpdateImportDetailsRequestSpec extends AnyWordSpec with Matchers {
 
     "deserialize with all optional fields absent" in {
       val json = Json.obj(
-        "applicationId"            -> 404,
-        "itemNumber"               -> 4,
-        "goodsDescriptionCategory" -> "10",
-        "updateSequenceNumber"     -> 1
+        "applicationId"        -> 404,
+        "itemNumber"           -> 4,
+        "goodsDescriptionCode" -> "10",
+        "updateSequenceNumber" -> 1
       )
 
       json.as[UpdateImportDetailsRequest] shouldBe UpdateImportDetailsRequest(
-        applicationId            = 404,
-        itemNumber               = 4,
-        goodsDescriptionCategory = "10",
-        updateSequenceNumber     = 1
+        applicationId        = 404,
+        itemNumber           = 4,
+        goodsDescriptionCode = "10",
+        updateSequenceNumber = 1
       )
     }
 
@@ -98,7 +98,7 @@ class UpdateImportDetailsRequestSpec extends AnyWordSpec with Matchers {
       Json.toJson(fullRequest).as[UpdateImportDetailsRequest] shouldBe fullRequest
     }
 
-    Seq("applicationId", "itemNumber", "goodsDescriptionCategory", "updateSequenceNumber").foreach { field =>
+    Seq("applicationId", "itemNumber", "goodsDescriptionCode", "updateSequenceNumber").foreach { field =>
       s"fail to deserialize when mandatory field $field is missing" in {
         (fullJson - field).validate[UpdateImportDetailsRequest].isError shouldBe true
       }

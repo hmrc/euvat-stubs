@@ -304,10 +304,10 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val json = contentAsJson(result)
       (json \ "applicationId").as[Int] mustBe 404
       (json \ "itemNumber").as[Int] mustBe 4
-      (json \ "supplierName").asOpt[String] mustBe Some("Finnish International")
-      (json \ "issuingDate").as[String] mustBe "2026-05-14T00:00:00"
+      (json \ "supplierName").asOpt[String] mustBe Some("Test Supplier")
+      (json \ "issuingDate").as[String] mustBe "2026-01-01T00:00:00"
       (json \ "periodStartDate").as[String] mustBe "2026-01-01T00:00:00"
-      (json \ "supplierCountryCode").asOpt[String] mustBe Some("GB")
+      (json \ "supplierCountryCode").asOpt[String] mustBe Some("HM")
     }
 
     "simulate 5xx and return 500 for applicationId ending with 500" in {
@@ -396,9 +396,9 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       FakeRequest("POST", "/add-purchase")
         .withJsonBody(
           Json.obj(
-            "applicationId"            -> 123456,
-            "goodsDescriptionCategory" -> "1",
-            "updateSequenceNumber"     -> 1
+            "applicationId"        -> 123456,
+            "goodsDescriptionCode" -> "1",
+            "updateSequenceNumber" -> 1
           )
         )
         .withHeaders("Content-Type" -> "application/json")
@@ -429,9 +429,9 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       FakeRequest("POST", "/add-import")
         .withJsonBody(
           Json.obj(
-            "applicationId"            -> 123456,
-            "goodsDescriptionCategory" -> "1",
-            "updateSequenceNumber"     -> 5
+            "applicationId"        -> 123456,
+            "goodsDescriptionCode" -> "1",
+            "updateSequenceNumber" -> 5
           )
         )
         .withHeaders("Content-Type" -> "application/json")
@@ -457,7 +457,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
     "simulate 5xx and return 500 when applicationId ends with 500" in {
       val fakeRequest = FakeRequest("POST", "/add-import")
-        .withJsonBody(Json.obj("applicationId" -> 500, "itemNumber" -> 1, "goodsDescriptionCategory" -> "1", "updateSequenceNumber" -> 1))
+        .withJsonBody(Json.obj("applicationId" -> 500, "itemNumber" -> 1, "goodsDescriptionCode" -> "1", "updateSequenceNumber" -> 1))
         .withHeaders("Content-Type" -> "application/json")
 
       val result = controller.addImport()(fakeRequest)
@@ -483,9 +483,9 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       status(result) mustBe OK
       val json = contentAsJson(result)
-      (json \ "goodsDescriptionCode").as[String] mustBe "1"
-      (json \ "supplierName").as[String] mustBe "Supplier Ltd"
-      (json \ "invoiceNumber").as[String] mustBe "INV-001"
+      (json \ "goodsDescriptionCode").as[String] mustBe "7"
+      (json \ "supplierName").as[String] mustBe "Test Supplier Name"
+      (json \ "invoiceNumber").as[String] mustBe "1234567890"
       (json \ "updateSequenceNumber").as[Int] mustBe 1
     }
 
@@ -562,9 +562,9 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
         .withJsonBody(
           Json.obj(
-            "applicationId"            -> 123456,
-            "goodsDescriptionCategory" -> "1",
-            "updateSequenceNumber"     -> 7
+            "applicationId"        -> 123456,
+            "goodsDescriptionCode" -> "1",
+            "updateSequenceNumber" -> 7
           )
         )
         .withHeaders("Content-Type" -> "application/json")
@@ -580,25 +580,25 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
         .withJsonBody(
           Json.obj(
-            "applicationId"               -> 777L,
-            "itemNumber"                  -> 5,
-            "goodsDescriptionCategory"    -> "2",
-            "goodsDescriptionSubCategory" -> "sub",
-            "goodsDescriptionText"        -> "desc",
-            "simplifiedInvoiceIndicator"  -> "true",
-            "supplierName"                -> "Acme Ltd",
-            "supplierAddressLine1"        -> "1 Road",
-            "supplierAddressLine2"        -> "Suite",
-            "supplierAddressLine3"        -> "Area",
-            "supplierVatNumber"           -> "500000111",
-            "supplierTaxIdentifier"       -> "TAX111",
-            "invoiceDate"                 -> "2025-03-10T12:34:56",
-            "invoiceNumber"               -> "INV-99",
-            "currencyCode"                -> "GBP",
-            "taxableAmount"               -> 100.5,
-            "vatAmount"                   -> 20.1,
-            "deductibleVatAmount"         -> 20.1,
-            "updateSequenceNumber"        -> 42
+            "applicationId"              -> 777L,
+            "itemNumber"                 -> 5,
+            "goodsDescriptionCode"       -> "2",
+            "goodsDescriptionSubCode"    -> "sub",
+            "goodsDescriptionText"       -> "desc",
+            "simplifiedInvoiceIndicator" -> "true",
+            "supplierName"               -> "Acme Ltd",
+            "supplierAddressLine1"       -> "1 Road",
+            "supplierAddressLine2"       -> "Suite",
+            "supplierAddressLine3"       -> "Area",
+            "supplierVatNumber"          -> "500000111",
+            "supplierTaxIdentifier"      -> "TAX111",
+            "invoiceDate"                -> "2025-03-10T12:34:56",
+            "invoiceNumber"              -> "INV-99",
+            "currencyCode"               -> "GBP",
+            "taxableAmount"              -> 100.5,
+            "vatAmount"                  -> 20.1,
+            "deductibleVatAmount"        -> 20.1,
+            "updateSequenceNumber"       -> 42
           )
         )
         .withHeaders("Content-Type" -> "application/json")
@@ -614,19 +614,19 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
         .withJsonBody(
           Json.obj(
-            "applicationId"               -> 404,
-            "itemNumber"                  -> 4,
-            "goodsDescriptionCategory"    -> "10",
-            "goodsDescriptionSubCategory" -> "10.4.1",
-            "simplifiedInvoiceIndicator"  -> "false",
-            "supplierName"                -> "Finnish International",
-            "supplierAddressLine1"        -> "356 High Street",
-            "invoiceNumber"               -> "a444",
-            "currencyCode"                -> "EUR",
-            "taxableAmount"               -> 1000,
-            "vatAmount"                   -> 99,
-            "deductibleVatAmount"         -> 40,
-            "updateSequenceNumber"        -> 2
+            "applicationId"              -> 404,
+            "itemNumber"                 -> 4,
+            "goodsDescriptionCode"       -> "10",
+            "goodsDescriptionSubCode"    -> "10.4.1",
+            "simplifiedInvoiceIndicator" -> "false",
+            "supplierName"               -> "Finnish International",
+            "supplierAddressLine1"       -> "356 High Street",
+            "invoiceNumber"              -> "a444",
+            "currencyCode"               -> "EUR",
+            "taxableAmount"              -> 1000,
+            "vatAmount"                  -> 99,
+            "deductibleVatAmount"        -> 40,
+            "updateSequenceNumber"       -> 2
           )
         )
         .withHeaders("Content-Type" -> "application/json")
@@ -637,13 +637,13 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       (contentAsJson(result) \ "updateSequenceNumber").as[Int] mustBe 2
     }
 
-    "succeed when goodsDescriptionSubCategory is absent" in {
+    "succeed when goodsDescriptionSubCode is absent" in {
       val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
         .withJsonBody(
           Json.obj(
             "applicationId"              -> 404,
             "itemNumber"                 -> 4,
-            "goodsDescriptionCategory"   -> "10",
+            "goodsDescriptionCode"       -> "10",
             "goodsDescriptionText"       -> "office stationery and consumables",
             "simplifiedInvoiceIndicator" -> "false",
             "supplierName"               -> "Finnish International",
@@ -677,10 +677,10 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
         .withJsonBody(
           Json.obj(
-            "applicationId"            -> 404,
-            "goodsDescriptionCategory" -> "10",
-            "invoiceDate"              -> JsNull,
-            "updateSequenceNumber"     -> 5
+            "applicationId"        -> 404,
+            "goodsDescriptionCode" -> "10",
+            "invoiceDate"          -> JsNull,
+            "updateSequenceNumber" -> 5
           )
         )
         .withHeaders("Content-Type" -> "application/json")
@@ -705,10 +705,10 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val fakeRequest = FakeRequest("PUT", "/rds-cande-proxy/update-purchase-details")
         .withJsonBody(
           Json.obj(
-            "applicationId"            -> 123456,
-            "goodsDescriptionCategory" -> "1",
-            "updateSequenceNumber"     -> 9,
-            "mode"                     -> "FULL"
+            "applicationId"        -> 123456,
+            "goodsDescriptionCode" -> "1",
+            "updateSequenceNumber" -> 9,
+            "mode"                 -> "FULL"
           )
         )
         .withHeaders("Content-Type" -> "application/json")
@@ -748,25 +748,25 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
         .withHeaders("Content-Type" -> "application/json")
 
     val fullJson = Json.obj(
-      "applicationId"               -> 404,
-      "itemNumber"                  -> 4,
-      "goodsDescriptionCategory"    -> "10",
-      "goodsDescriptionSubCategory" -> "10.4.1",
-      "goodsDescriptionText"        -> "office stationery and consumables",
-      "hasSadReferenceNumber"       -> "true",
-      "sadReferenceNumber"          -> "SAD123456789",
-      "referenceInformation"        -> "Import declaration reference",
-      "supplierName"                -> "Finnish International",
-      "supplierAddressLine1"        -> "356 High Street",
-      "supplierAddressLine2"        -> "Rochdale",
-      "supplierAddressLine3"        -> "England",
-      "supplierCountryCode"         -> "GB",
-      "issuingDate"                 -> "2026-05-14T00:00:00",
-      "currencyCode"                -> "EUR",
-      "taxableAmount"               -> 1000,
-      "vatAmount"                   -> 99,
-      "deductibleVatAmount"         -> 40,
-      "updateSequenceNumber"        -> 1
+      "applicationId"           -> 404,
+      "itemNumber"              -> 4,
+      "goodsDescriptionCode"    -> "10",
+      "goodsDescriptionSubCode" -> "10.4.1",
+      "goodsDescriptionText"    -> "office stationery and consumables",
+      "hasSadReferenceNumber"   -> "true",
+      "sadReferenceNumber"      -> "SAD123456789",
+      "referenceInformation"    -> "Import declaration reference",
+      "supplierName"            -> "Finnish International",
+      "supplierAddressLine1"    -> "356 High Street",
+      "supplierAddressLine2"    -> "Rochdale",
+      "supplierAddressLine3"    -> "England",
+      "supplierCountryCode"     -> "GB",
+      "issuingDate"             -> "2026-05-14T00:00:00",
+      "currencyCode"            -> "EUR",
+      "taxableAmount"           -> 1000,
+      "vatAmount"               -> 99,
+      "deductibleVatAmount"     -> 40,
+      "updateSequenceNumber"    -> 1
     )
 
     "return 200 with updateSequenceNumber + 1" in {
@@ -778,10 +778,10 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
     "return 200 when only the mandatory fields are supplied" in {
       val mandatoryJson = Json.obj(
-        "applicationId"            -> 404,
-        "itemNumber"               -> 4,
-        "goodsDescriptionCategory" -> "10",
-        "updateSequenceNumber"     -> 7
+        "applicationId"        -> 404,
+        "itemNumber"           -> 4,
+        "goodsDescriptionCode" -> "10",
+        "updateSequenceNumber" -> 7
       )
 
       val result = controller.updateImportDetails()(requestWith(mandatoryJson))
@@ -809,7 +809,7 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
 
     "return 400 when a mandatory field is missing" in {
-      val result = controller.updateImportDetails()(requestWith(fullJson - "goodsDescriptionCategory"))
+      val result = controller.updateImportDetails()(requestWith(fullJson - "goodsDescriptionCode"))
 
       status(result) mustBe BAD_REQUEST
     }

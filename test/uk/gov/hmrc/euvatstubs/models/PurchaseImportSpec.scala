@@ -25,14 +25,14 @@ class PurchaseImportSpec extends AnyWordSpec with Matchers {
   "PurchaseImport JSON format" should {
     "serialize and deserialize correctly" in {
       val model = PurchaseImport(
-        itemNumber                  = 1,
-        goodsDescriptionCategory    = "1",
-        goodsDescriptionSubCategory = Some("1.2"),
-        currencyCode                = "DE",
-        taxableAmount               = BigDecimal(333),
-        vatAmount                   = BigDecimal(222),
-        deductibleVatAmount         = BigDecimal(111.11),
-        itemType                    = "P"
+        itemNumber              = 1,
+        goodsDescriptionCode    = "1",
+        goodsDescriptionSubCode = Some("1.2"),
+        currencyCode            = "DE",
+        taxableAmount           = BigDecimal(333),
+        vatAmount               = BigDecimal(222),
+        deductibleVatAmount     = BigDecimal(111.11),
+        itemType                = "P"
       )
 
       Json.toJson(model).as[PurchaseImport] shouldBe model

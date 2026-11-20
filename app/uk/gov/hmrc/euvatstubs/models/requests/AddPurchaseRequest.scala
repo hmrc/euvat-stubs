@@ -22,9 +22,9 @@ import java.time.LocalDateTime
 
 case class AddPurchaseRequest(
   applicationId: Long,
-  goodsDescriptionCategory: String,
+  goodsDescriptionCode: String,
+  goodsDescriptionSubCode: Option[String],
   goodsDescriptionText: Option[String],
-  purchaseSubcategory: Option[String],
   simplifiedInvoiceIndicator: Option[String],
   supplierName: Option[String],
   supplierAddress1: Option[String],
