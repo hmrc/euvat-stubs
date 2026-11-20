@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package uk.gov.hmrc.euvatstubs.models.requests
 
 import org.scalatest.matchers.should.Matchers
@@ -14,7 +30,7 @@ class AddAttachmentRequestSpec extends AnyWordSpec with Matchers {
     fileName             = "receipt.pdf",
     fileType             = "pdf",
     fileDescription      = Some("Purchase receipt"),
-    fileSize             = fileContent.length.toLong,
+    fileSize             = fileContent.length,
     fileContent          = fileContent,
     updateSequenceNumber = 10
   )
@@ -40,7 +56,7 @@ class AddAttachmentRequestSpec extends AnyWordSpec with Matchers {
         "fileName"             -> "receipt.pdf",
         "fileType"             -> "pdf",
         "fileDescription"      -> "Purchase receipt",
-        "fileSize"             -> 5L,
+        "fileSize"             -> 5,
         "fileContent"          -> Json.arr(1, 2, 3, 4, 5),
         "updateSequenceNumber" -> 10
       )
@@ -52,7 +68,7 @@ class AddAttachmentRequestSpec extends AnyWordSpec with Matchers {
       result.fileName             shouldBe "receipt.pdf"
       result.fileType             shouldBe "pdf"
       result.fileDescription      shouldBe Some("Purchase receipt")
-      result.fileSize             shouldBe 5L
+      result.fileSize             shouldBe 5
       result.fileContent.toSeq    shouldBe Seq[Byte](1, 2, 3, 4, 5)
       result.updateSequenceNumber shouldBe 10
     }
@@ -62,7 +78,7 @@ class AddAttachmentRequestSpec extends AnyWordSpec with Matchers {
         "applicationId"        -> 123456L,
         "fileName"             -> "receipt.pdf",
         "fileType"             -> "pdf",
-        "fileSize"             -> 5L,
+        "fileSize"             -> 5,
         "fileContent"          -> Json.arr(1, 2, 3, 4, 5),
         "updateSequenceNumber" -> 10
       )
@@ -78,7 +94,7 @@ class AddAttachmentRequestSpec extends AnyWordSpec with Matchers {
         "fileName"             -> "receipt.pdf",
         "fileType"             -> "pdf",
         "fileDescription"      -> "Purchase receipt",
-        "fileSize"             -> 5L,
+        "fileSize"             -> 5,
         "fileContent"          -> Json.arr(1, 2, 3, 4, 5),
         "updateSequenceNumber" -> 10
       )
