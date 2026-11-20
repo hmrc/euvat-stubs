@@ -21,3 +21,4 @@ POST       /get-reference-information-count                                   uk
 GET        /get-application-details/:applicationId                            uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getApplicationDetails(applicationId: Long)
 GET        /get-attachment-details/:applicationId/:attachmentNumber           uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getAttachmentDetails(applicationId: Long, attachmentNumber: Int)
 DELETE     /delete-attachment                                                 uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.deleteAttachment
+POST       /add-attachment                                                    uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.addAttachment

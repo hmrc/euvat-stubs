@@ -579,3 +579,36 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         Ok(Json.toJson(DeleteAttachmentResponse(newSeq)))
     }
   }
+
+  def addAttachment: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: addAttachment called")
+
+    request.body.asJson.flatMap(_.asOpt[AddAttachmentRequest]) match {
+      case None =>
+        BadRequest("Invalid or missing request body")
+
+      case Some(req) if req.applicationId % 1000 == 500 =>
+        InternalServerError("Simulated database connectivity failure")
+
+      case Some(req) if req.applicationId <= 0 =>
+        BadRequest(s"Invalid applicationId: ${req.applicationId}")
+
+      case Some(req) =>
+        val newSeq = req.updateSequenceNumber + 1
+        val attachmentNumber = 1
+
+        logger.info(
+          s"Stub addAttachment: applicationId=${req.applicationId}, " +
+            s"attachmentNumber=$attachmentNumber, newSeq=$newSeq"
+        )
+
+        Ok(
+          Json.toJson(
+            AddAttachmentResponse(
+              attachmentNumber     = attachmentNumber,
+              updateSequenceNumber = newSeq
+            )
+          )
+        )
+    }
+  }
