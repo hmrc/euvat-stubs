@@ -18,11 +18,13 @@ package uk.gov.hmrc.euvatstubs.controllers
 
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.Materializer
+import org.scalatest.matchers.should.Matchers.shouldBe
 import org.scalatestplus.play.*
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.json.*
 import play.api.test.*
 import play.api.test.Helpers.*
+import uk.gov.hmrc.euvatstubs.models.requests.AddAttachmentRequest
 import uk.gov.hmrc.euvatstubs.models.responses.*
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -1304,6 +1306,118 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       val result = controller.deleteAttachment()(fakeRequest)
 
       status(result) mustBe BAD_REQUEST
+    }
+  }
+
+  "EuVatCandeDataController.addAttachment" should {
+
+    val fileContent: Array[Byte] =
+      "receipt contents".getBytes(java.nio.charset.StandardCharsets.UTF_8)
+
+    val attachmentRequest = AddAttachmentRequest(
+      applicationId        = 123456L,
+      fileName             = "receipt.pdf",
+      fileType             = "pdf",
+      fileDescription      = Some("Purchase receipt"),
+      fileSize             = fileContent.length,
+      fileContent          = fileContent,
+      updateSequenceNumber = 10
+    )
+
+    "return 200 with the attachment number and incremented update sequence number" in {
+      val result = controller.addAttachment(
+        FakeRequest(POST, "/add-attachment")
+          .withJsonBody(Json.toJson(attachmentRequest))
+      )
+
+      status(result) shouldBe OK
+
+      contentAsJson(result).as[AddAttachmentResponse] shouldBe
+        AddAttachmentResponse(
+          attachmentNumber     = 1,
+          updateSequenceNumber = 11
+        )
+    }
+
+    "increment the supplied update sequence number by one" in {
+      val request =
+        attachmentRequest.copy(updateSequenceNumber = 25)
+
+      val result = controller.addAttachment(
+        FakeRequest(POST, "/add-attachment")
+          .withJsonBody(Json.toJson(request))
+      )
+
+      status(result) shouldBe OK
+
+      contentAsJson(result)
+        .as[AddAttachmentResponse]
+        .updateSequenceNumber shouldBe 26
+    }
+
+    "return attachment number 1" in {
+      val result = controller.addAttachment(
+        FakeRequest(POST, "/add-attachment")
+          .withJsonBody(Json.toJson(attachmentRequest))
+      )
+
+      status(result) shouldBe OK
+
+      contentAsJson(result)
+        .as[AddAttachmentResponse]
+        .attachmentNumber shouldBe 1
+    }
+
+    "return 400 when the request body is invalid" in {
+      val result = controller.addAttachment(
+        FakeRequest(POST, "/add-attachment")
+          .withJsonBody(Json.obj("invalid" -> "request"))
+      )
+
+      status(result)          shouldBe BAD_REQUEST
+      contentAsString(result) shouldBe "Invalid or missing request body"
+    }
+
+    "return 400 when a mandatory field is missing" in {
+      val json =
+        Json
+          .toJson(attachmentRequest)
+          .as[play.api.libs.json.JsObject] - "applicationId"
+
+      val result = controller.addAttachment(
+        FakeRequest(POST, "/add-attachment")
+          .withJsonBody(json)
+      )
+
+      status(result)          shouldBe BAD_REQUEST
+      contentAsString(result) shouldBe "Invalid or missing request body"
+    }
+
+    "return 400 when applicationId is invalid" in {
+      val request =
+        attachmentRequest.copy(applicationId = 0L)
+
+      val result = controller.addAttachment(
+        FakeRequest(POST, "/add-attachment")
+          .withJsonBody(Json.toJson(request))
+      )
+
+      status(result)          shouldBe BAD_REQUEST
+      contentAsString(result) shouldBe "Invalid applicationId: 0"
+    }
+
+    "return 500 when a database connectivity failure is simulated" in {
+      val request =
+        attachmentRequest.copy(applicationId = 123500L)
+
+      val result = controller.addAttachment(
+        FakeRequest(POST, "/add-attachment")
+          .withJsonBody(Json.toJson(request))
+      )
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentAsString(result) shouldBe
+        "Simulated database connectivity failure"
     }
   }
 
