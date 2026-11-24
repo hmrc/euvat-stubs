@@ -1154,6 +1154,119 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
   }
 
+  "EuVatCandeDataController.getAllAttachments" should {
+    def fakeRequest(body: JsObject) = FakeRequest("POST", "/get-all-attachments")
+      .withJsonBody(body)
+      .withHeaders("Content-Type" -> "application/json")
+
+    "return three attachments by default" in {
+      val result = controller.getAllAttachments()(fakeRequest(Json.obj("applicationId" -> 999)))
+      status(result) mustBe OK
+
+      val json = contentAsJson(result)
+      (json \ "totalAttachments").as[Int] mustBe 3
+      (json \ "attachments").as[Seq[JsObject]].size mustBe 3
+    }
+
+    "return no attachments for applicationId 666" in {
+      val result = controller.getAllAttachments()(fakeRequest(Json.obj("applicationId" -> 666)))
+      status(result) mustBe OK
+
+      val json = contentAsJson(result)
+      (json \ "totalAttachments").as[Int] mustBe 0
+      (json \ "attachments").as[Seq[JsObject]] mustBe empty
+    }
+
+    "return one attachment without a description for applicationId 111" in {
+      val result = controller.getAllAttachments()(fakeRequest(Json.obj("applicationId" -> 111)))
+      status(result) mustBe OK
+
+      val attachments = (contentAsJson(result) \ "attachments").as[Seq[JsObject]]
+      attachments.size mustBe 1
+      (attachments.head \ "fileDescription").toOption mustBe None
+    }
+
+    "return the first page of 10 attachments for applicationId 402" in {
+      val result = controller.getAllAttachments()(fakeRequest(Json.obj("applicationId" -> 402)))
+      status(result) mustBe OK
+
+      val json = contentAsJson(result)
+      (json \ "totalAttachments").as[Int] mustBe 12
+      (json \ "attachments").as[Seq[JsObject]].size mustBe 10
+    }
+
+    "return the second page of attachments for applicationId 402" in {
+      val result = controller.getAllAttachments()(
+        fakeRequest(Json.obj("applicationId" -> 402, "startAt" -> 10, "maxNumber" -> 10))
+      )
+      status(result) mustBe OK
+
+      val json = contentAsJson(result)
+      (json \ "totalAttachments").as[Int] mustBe 12
+      (json \ "attachments").as[Seq[JsObject]].map(a => (a \ "attachmentNumber").as[Int]) mustBe Seq(11, 12)
+    }
+
+    "return file sizes in KB" in {
+      val result = controller.getAllAttachments()(fakeRequest(Json.obj("applicationId" -> 999)))
+      status(result) mustBe OK
+
+      (contentAsJson(result) \ "attachments").as[Seq[JsObject]].map(a => (a \ "fileSize").as[Int]) mustBe Seq(1024, 2048, 512)
+    }
+
+    "return BadRequest for applicationId 0" in {
+      val result = controller.getAllAttachments()(fakeRequest(Json.obj("applicationId" -> 0)))
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return InternalServerError when the applicationId ends with 500" in {
+      val result = controller.getAllAttachments()(fakeRequest(Json.obj("applicationId" -> 1500)))
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+
+    "return BadRequest for invalid request" in {
+      val result = controller.getAllAttachments()(fakeRequest(Json.obj()))
+      status(result) mustBe BAD_REQUEST
+    }
+  }
+
+  "EuVatCandeDataController.getFullAttachmentDetails" should {
+    "return full attachment details including Base64 file content for a valid request" in {
+      val fakeRequest = FakeRequest("GET", "/get-full-attachment-details/404/4")
+
+      val result = controller.getFullAttachmentDetails(404L, 4)(fakeRequest)
+
+      status(result) mustBe OK
+      val json = contentAsJson(result)
+
+      (json \ "attachmentNumber").as[Int] mustBe 4
+      (json \ "fileName").asOpt[String] mustBe Some("test.pdf")
+      (json \ "fileType").asOpt[String] mustBe Some("pdf")
+      (json \ "fileDescription").asOpt[String] mustBe Some("pdf file attached")
+      (json \ "fileSize").asOpt[Int] mustBe Some(596)
+      (json \ "updateSequenceNumber").as[Int] mustBe 10
+
+      val decoded = java.util.Base64.getDecoder.decode((json \ "fileContent").as[String])
+      new String(decoded.take(5), "US-ASCII") mustBe "%PDF-"
+      decoded.length mustBe 596
+    }
+
+    "simulate 5xx and return 500 for applicationId ending with 500" in {
+      val fakeRequest = FakeRequest("GET", "/get-full-attachment-details/500/4")
+
+      val result = controller.getFullAttachmentDetails(500L, 4)(fakeRequest)
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+
+    "simulate 5xx and return 500 when attachmentNumber is 500" in {
+      val fakeRequest = FakeRequest("GET", "/get-full-attachment-details/404/500")
+
+      val result = controller.getFullAttachmentDetails(404L, 500)(fakeRequest)
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+  }
+
   "EuVatCandeDataController.deleteAttachment" should {
 
     def requestWith(json: JsObject) =

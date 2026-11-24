@@ -20,5 +20,7 @@ DELETE     /delete-import                                                     uk
 POST       /get-reference-information-count                                   uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getReferenceInformationCount
 GET        /get-application-details/:applicationId                            uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getApplicationDetails(applicationId: Long)
 GET        /get-attachment-details/:applicationId/:attachmentNumber           uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getAttachmentDetails(applicationId: Long, attachmentNumber: Int)
+POST       /get-all-attachments                                               uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getAllAttachments
+GET        /get-full-attachment-details/:applicationId/:attachmentNumber      uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.getFullAttachmentDetails(applicationId: Long, attachmentNumber: Int)
 DELETE     /delete-attachment                                                 uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.deleteAttachment
 POST       /add-attachment                                                    uk.gov.hmrc.euvatstubs.controllers.EuVatCandeDataController.addAttachment

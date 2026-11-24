@@ -21,7 +21,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
 import uk.gov.hmrc.euvatstubs.models.requests.*
 import uk.gov.hmrc.euvatstubs.models.responses.*
-import uk.gov.hmrc.euvatstubs.models.{LatestApplication, PurchaseImport}
+import uk.gov.hmrc.euvatstubs.models.{Attachment, LatestApplication, PurchaseImport}
 import uk.gov.hmrc.euvatstubs.repositories.VrnStateRepository
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -564,6 +564,92 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     else if (attachmentNumber == 500)
       InternalServerError(s"No attachment found for the requested applicationId: $applicationId, attachmentNumber: $attachmentNumber")
     else Ok(Json.toJson(getAttachmentDetailsResponse.copy(attachmentNumber = attachmentNumber)))
+  }
+
+  private val attachment: Attachment = Attachment(
+    attachmentNumber = 1,
+    fileName         = Some("invoice.pdf"),
+    fileType         = Some("pdf"),
+    fileDescription  = Some("Invoice description"),
+    fileSize         = Some(1024)
+  )
+
+  def getAllAttachments: Action[AnyContent] = Action { implicit request =>
+    logger.info("Stub: returning all attachments")
+
+    request.body.asJson.flatMap(_.validate[GetAllAttachmentsRequest].asOpt).fold(BadRequest("Invalid or missing request body")) { request =>
+      request.applicationId match {
+        case 0 => BadRequest(s"No attachments found for the requested applicationId: ${request.applicationId}")
+        // Simulate backend/database connectivity failure when applicationId ends with 500
+        case applicationId if applicationId % 1000 == 500 => InternalServerError("Simulated database connectivity failure")
+        case _ =>
+          val allAttachments: List[Attachment] =
+            request.applicationId match {
+              case 666 => List.empty
+              case 111 => List(attachment.copy(fileDescription = None))
+              case 402 =>
+                (1 to 12).toList.map { number =>
+                  attachment.copy(
+                    attachmentNumber = number,
+                    fileName         = Some(s"invoice-$number.pdf"),
+                    fileDescription  = Some(s"Invoice $number")
+                  )
+                }
+              case _ =>
+                List(
+                  attachment,
+                  attachment.copy(
+                    attachmentNumber = 2,
+                    fileName         = Some("fuel-receipt.jpg"),
+                    fileType         = Some("jpg"),
+                    fileDescription  = Some("Fuel receipt"),
+                    fileSize         = Some(2048)
+                  ),
+                  attachment.copy(
+                    attachmentNumber = 3,
+                    fileName         = Some("train-ticket.png"),
+                    fileType         = Some("png"),
+                    fileDescription  = None,
+                    fileSize         = Some(512)
+                  )
+                )
+            }
+
+          val startAt = request.startAt.getOrElse(0)
+          val maxNumber = request.maxNumber.getOrElse(10)
+
+          Ok(
+            Json.toJson(
+              GetAllAttachmentsResponse(
+                attachments      = allAttachments.slice(startAt, startAt + maxNumber),
+                totalAttachments = allAttachments.size
+              )
+            )
+          )
+      }
+    }
+  }
+
+  private val stubPdfBase64: String =
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAzMDAgMTQ0XSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA1MiA+PgpzdHJlYW0KQlQgL0YxIDE4IFRmIDQwIDcwIFRkIChFVSBWQVQgc3R1YiBhdHRhY2htZW50KSBUaiBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDM0MyAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQxMwolJUVPRgo="
+
+  private val getFullAttachmentDetailsResponse: GetFullAttachmentDetailsResponse = GetFullAttachmentDetailsResponse(
+    attachmentNumber     = 11,
+    fileName             = Some("test.pdf"),
+    fileType             = Some("pdf"),
+    fileDescription      = Some("pdf file attached"),
+    fileSize             = Some(596),
+    fileContent          = Some(stubPdfBase64),
+    updateSequenceNumber = 10
+  )
+
+  def getFullAttachmentDetails(applicationId: Long, attachmentNumber: Int): Action[AnyContent] = Action { implicit request =>
+    logger.info(s"Stub: returning full attachment details for applicationId: $applicationId, attachmentNumber: $attachmentNumber")
+
+    if (applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
+    else if (attachmentNumber == 500)
+      InternalServerError(s"No attachment found for the requested applicationId: $applicationId, attachmentNumber: $attachmentNumber")
+    else Ok(Json.toJson(getFullAttachmentDetailsResponse.copy(attachmentNumber = attachmentNumber)))
   }
 
   def deleteAttachment: Action[AnyContent] = Action { implicit request =>
