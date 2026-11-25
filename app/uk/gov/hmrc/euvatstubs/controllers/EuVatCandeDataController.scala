@@ -28,12 +28,16 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import java.time.LocalDateTime
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.concurrent.TrieMap
+import java.util.concurrent.atomic.AtomicInteger
 import scala.util.control.NonFatal
 
 @Singleton
 class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepository: VrnStateRepository)(implicit ec: ExecutionContext)
     extends BackendController(cc)
     with Logging:
+
+  private val nextImportItemNumbers = TrieMap.empty[Long, AtomicInteger]
 
   def addApplication(vrn: String): Action[AnyContent] = Action { implicit request =>
     logger.info(s"Stub: Creating refund application for vrn: $vrn")
@@ -44,6 +48,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     else if (vrn.endsWith("880")) { ApplicationResponse(402, "GB123406", 4) }
     else { ApplicationResponse(660, "GB123100", 6) }
 
+    nextImportItemNumbers.remove(response.applicationId)
     Ok(Json.toJson(response))
   }
 
@@ -174,7 +179,10 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
       case None => BadRequest("Invalid or missing request body")
       case Some(req) =>
         if (req.applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
-        else Ok(Json.toJson(AddPurchaseResponse(itemNumber = 4, updateSequenceNumber = req.updateSequenceNumber)))
+        else {
+          val itemNumber = nextImportItemNumbers.getOrElseUpdate(req.applicationId, new AtomicInteger(3)).incrementAndGet()
+          Ok(Json.toJson(AddPurchaseResponse(itemNumber = itemNumber, updateSequenceNumber = req.updateSequenceNumber)))
+        }
     }
   }
 
@@ -502,7 +510,14 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
   def getReferenceInformationCount: Action[AnyContent] = Action { implicit request =>
     logger.info("Stub: getReferenceInformationCount called")
 
-    Ok(Json.toJson(ReferenceInfoCountResponse(0)))
+    request.body.asJson.flatMap(_.validate[ReferenceInfoCountRequest].asOpt) match {
+      case None => BadRequest("Invalid or missing request body")
+      case Some(req) =>
+        val count = math.max(req.itemNumber - 4, 0)
+
+        logger.info(s"Stub getReferenceInformationCount: applicationId=${req.applicationId}, itemNumber=${req.itemNumber}, count=$count")
+        Ok(Json.toJson(ReferenceInfoCountResponse(count)))
+    }
   }
 
   private def applicationDetails(applicationId: Long): ApplicationDetails =

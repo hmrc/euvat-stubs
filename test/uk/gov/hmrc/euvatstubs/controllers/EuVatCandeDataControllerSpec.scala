@@ -468,6 +468,58 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
   }
 
+  "EuVatCandeDataController.getReferenceInformationCount" should {
+    def addImportRequest(applicationId: Long) =
+      FakeRequest("POST", "/add-import")
+        .withJsonBody(
+          Json.obj(
+            "applicationId"        -> applicationId,
+            "goodsDescriptionCode" -> "1",
+            "updateSequenceNumber" -> 1
+          )
+        )
+        .withHeaders("Content-Type" -> "application/json")
+
+    def countRequest(applicationId: Long, itemNumber: Int) =
+      FakeRequest("POST", "/get-reference-information-count")
+        .withJsonBody(Json.obj("applicationId" -> applicationId, "itemNumber" -> itemNumber))
+        .withHeaders("Content-Type" -> "application/json")
+
+    "return a positive count for a second import and reset for a new journey" in {
+      val applicationId = 111L
+      val createApplicationRequest = FakeRequest("POST", "/create-application")
+      status(controller.addApplication("111")(createApplicationRequest)) mustBe OK
+
+      val firstImport = contentAsJson(controller.addImport()(addImportRequest(applicationId))).as[AddPurchaseResponse]
+      firstImport.itemNumber mustBe 4
+
+      val secondImport = contentAsJson(controller.addImport()(addImportRequest(applicationId))).as[AddPurchaseResponse]
+      secondImport.itemNumber mustBe 5
+
+      val result = controller.getReferenceInformationCount()(countRequest(applicationId, secondImport.itemNumber))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "count").as[Int] mustBe 1
+
+      status(controller.addApplication("111")(createApplicationRequest)) mustBe OK
+      val firstImportOfNewJourney = contentAsJson(controller.addImport()(addImportRequest(applicationId))).as[AddPurchaseResponse]
+      firstImportOfNewJourney.itemNumber mustBe 4
+
+      val firstImportCount = controller.getReferenceInformationCount()(countRequest(applicationId, firstImportOfNewJourney.itemNumber))
+      status(firstImportCount) mustBe OK
+      (contentAsJson(firstImportCount) \ "count").as[Int] mustBe 0
+    }
+
+    "return zero for the first import" in {
+      val applicationId = 7654322L
+      val firstImport = contentAsJson(controller.addImport()(addImportRequest(applicationId))).as[AddPurchaseResponse]
+      val result = controller.getReferenceInformationCount()(countRequest(applicationId, firstImport.itemNumber))
+
+      status(result) mustBe OK
+      (contentAsJson(result) \ "count").as[Int] mustBe 0
+    }
+  }
+
   "EuVatCandeDataController.getPurchaseDetails" should {
 
     val validRequest =
