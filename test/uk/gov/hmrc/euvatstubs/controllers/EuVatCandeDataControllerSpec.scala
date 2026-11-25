@@ -485,8 +485,11 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
         .withJsonBody(Json.obj("applicationId" -> applicationId, "itemNumber" -> itemNumber))
         .withHeaders("Content-Type" -> "application/json")
 
-    "return a positive count for a second import" in {
-      val applicationId = 7654321L
+    "return a positive count for a second import and reset for a new journey" in {
+      val applicationId = 111L
+      val createApplicationRequest = FakeRequest("POST", "/create-application")
+      status(controller.addApplication("111")(createApplicationRequest)) mustBe OK
+
       val firstImport = contentAsJson(controller.addImport()(addImportRequest(applicationId))).as[AddPurchaseResponse]
       firstImport.itemNumber mustBe 4
 
@@ -497,6 +500,14 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
       status(result) mustBe OK
       (contentAsJson(result) \ "count").as[Int] mustBe 1
+
+      status(controller.addApplication("111")(createApplicationRequest)) mustBe OK
+      val firstImportOfNewJourney = contentAsJson(controller.addImport()(addImportRequest(applicationId))).as[AddPurchaseResponse]
+      firstImportOfNewJourney.itemNumber mustBe 4
+
+      val firstImportCount = controller.getReferenceInformationCount()(countRequest(applicationId, firstImportOfNewJourney.itemNumber))
+      status(firstImportCount) mustBe OK
+      (contentAsJson(firstImportCount) \ "count").as[Int] mustBe 0
     }
 
     "return zero for the first import" in {

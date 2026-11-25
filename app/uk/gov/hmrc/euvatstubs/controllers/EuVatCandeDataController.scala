@@ -48,6 +48,7 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
     else if (vrn.endsWith("880")) { ApplicationResponse(402, "GB123406", 4) }
     else { ApplicationResponse(660, "GB123100", 6) }
 
+    nextImportItemNumbers.remove(response.applicationId)
     Ok(Json.toJson(response))
   }
 
