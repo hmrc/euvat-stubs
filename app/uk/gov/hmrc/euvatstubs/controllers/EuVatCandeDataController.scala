@@ -713,3 +713,22 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         )
     }
   }
+
+  def getApplicationCounts(applicationId: Long): Action[AnyContent] = Action { _ =>
+    logger.info(s"Stub: returning application counts for applicationId: $applicationId")
+
+    if (applicationId <= 0) BadRequest(s"Invalid applicationId: $applicationId")
+    else if (applicationId % 1000 == 500) InternalServerError("Simulated database connectivity failure")
+    else {
+      val (purchaseCount, importCount, attachmentCount) =
+        applicationId match {
+          case 111 => (1, 1, 1)
+          case 402 => (4, 2, 12)
+          case 666 => (1, 1, 0)
+          case 999 => (0, 1, 3)
+          case _   => (1, 1, 3)
+        }
+
+      Ok(Json.toJson(ApplicationCountsResponse(purchaseCount, importCount, attachmentCount)))
+    }
+  }
