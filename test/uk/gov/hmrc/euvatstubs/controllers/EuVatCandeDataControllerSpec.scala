@@ -1473,4 +1473,32 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
   }
 
+  "EuVatCandeDataController.getApplicationCounts" should {
+    def request(applicationId: Long) =
+      FakeRequest("GET", s"/get-application-counts/$applicationId")
+
+    "return counts matching the application's purchase, import and attachment fixtures" in {
+      val result = controller.getApplicationCounts(402)(request(402))
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.obj(
+        "purchaseCount"   -> 4,
+        "importCount"     -> 2,
+        "attachmentCount" -> 12
+      )
+    }
+
+    "return 400 when the application ID is empty" in {
+      val result = controller.getApplicationCounts(0)(request(0))
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return 500 when the application ID ends with 500" in {
+      val result = controller.getApplicationCounts(1500)(request(1500))
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+    }
+  }
+
 }
