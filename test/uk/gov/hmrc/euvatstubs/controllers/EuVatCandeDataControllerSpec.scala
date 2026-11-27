@@ -27,6 +27,7 @@ import play.api.test.Helpers.*
 import uk.gov.hmrc.euvatstubs.models.requests.AddAttachmentRequest
 import uk.gov.hmrc.euvatstubs.models.responses.*
 
+import java.time.LocalDateTime
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -1470,6 +1471,18 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentAsString(result) shouldBe
         "Simulated database connectivity failure"
+    }
+  }
+
+  "EuVatCandeDataController.getSubmissionDateTime" should {
+    "return the submission date-time for the application" in {
+      val fakeRequest = FakeRequest("GET", "/get-submission-datetime/133")
+
+      val result = controller.getSubmissionDateTime(133)(fakeRequest)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.obj("submissionDate" -> "2026-04-22T00:00:00")
+      (contentAsJson(result) \ "submissionDate").as[LocalDateTime] mustBe LocalDateTime.of(2026, 4, 22, 0, 0)
     }
   }
 
