@@ -1473,4 +1473,15 @@ class EuVatCandeDataControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
     }
   }
 
+  "EuVatCandeDataController.getSubmissionDateTime" should {
+    "return the submission date-time for the application" in {
+      val fakeRequest = FakeRequest("GET", "/get-submission-datetime/133")
+
+      val result = controller.getSubmissionDateTime(133)(fakeRequest)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.obj("submissionDate" -> "2026-04-22T00:00:00")
+    }
+  }
+
 }

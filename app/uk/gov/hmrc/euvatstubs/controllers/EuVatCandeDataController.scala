@@ -713,3 +713,8 @@ class EuVatCandeDataController @Inject() (cc: ControllerComponents, vrnStateRepo
         )
     }
   }
+
+  def getSubmissionDateTime(applicationId: Long): Action[AnyContent] = Action { implicit request =>
+    logger.info(s"Stub: returning submission datetime for application: $applicationId")
+    Ok(Json.obj("submissionDate" -> "2026-04-22T00:00:00"))
+  }
